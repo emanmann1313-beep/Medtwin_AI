@@ -1,0 +1,6 @@
+{
+  "name": "MedTwin AI",
+  "description": "Your medicines. Your care team. One connected view. Medication management, digital twin simulation, and connected care across patient, caregiver, doctor, and hospital workspaces.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
