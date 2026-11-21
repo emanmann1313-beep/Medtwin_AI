@@ -17,6 +17,21 @@ import { getTodayIso } from '@/src/services/adherenceEngine';
 
 const DEMO_STORAGE_KEY = 'medtwin_demo_state_v1';
 
+let idCounter = 0;
+function makeId(prefix: string): string {
+  idCounter += 1;
+  return `${prefix}-${Date.now()}-${idCounter}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function dedupeById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 export interface LogDoseInput {
   patientId: string;
   medicationId: string;
@@ -135,7 +150,15 @@ export const demoMedTwinService: IMedTwinService = {
         window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(fresh));
         return fresh;
       }
-      return JSON.parse(raw) as MedTwinState;
+      const parsed = JSON.parse(raw) as MedTwinState;
+      return {
+        ...parsed,
+        history: dedupeById(parsed.history ?? []),
+        alerts: dedupeById(parsed.alerts ?? []),
+        doseLogs: dedupeById(parsed.doseLogs ?? []),
+        dadiNaniEntries: dedupeById(parsed.dadiNaniEntries ?? []),
+        clinicianNotes: dedupeById(parsed.clinicianNotes ?? []),
+      };
     } catch {
       return buildSeedState();
     }
@@ -171,7 +194,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const med = state.medications.find((m) => m.id === input.medicationId);
     const nowIso = new Date().toISOString();
-    const newLogId = `dl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const newLogId = makeId('dl');
 
     const nextLogs = [
       ...state.doseLogs,
@@ -203,7 +226,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const nextHistory = [
       {
-        id: `hist-${Date.now()}`,
+        id: makeId('hist'),
         patientId: input.patientId,
         category: 'dose' as const,
         title: `${med?.name ?? 'Medication'} ${med?.strength ?? ''} marked ${input.status}`,
@@ -251,7 +274,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const nextHistory = [
       {
-        id: `hist-${Date.now()}`,
+        id: makeId('hist'),
         patientId: target.patientId,
         category: 'medication_change' as const,
         title: `Undid dose entry for ${med?.name ?? 'Medication'}`,
@@ -279,7 +302,7 @@ export const demoMedTwinService: IMedTwinService = {
   ): MedTwinState {
     const nowIso = new Date().toISOString();
     const todayStr = getTodayIso();
-    const rxId = `rx-${Date.now()}`;
+    const rxId = makeId('rx');
 
     const newRx: Prescription = {
       ...input.prescription,
@@ -294,7 +317,7 @@ export const demoMedTwinService: IMedTwinService = {
       const times =
         item.scheduledTimes && item.scheduledTimes.length > 0 ? item.scheduledTimes : ['08:00'];
       return {
-        id: `med-${Date.now()}-${idx}`,
+        id: makeId(`med-${idx}`),
         patientId: input.patientId,
         prescriptionId: rxId,
         name: item.medicineName,
@@ -316,7 +339,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const newHistory = [
       {
-        id: `hist-${Date.now()}`,
+        id: makeId('hist'),
         patientId: input.patientId,
         category: 'prescription' as const,
         title: `Confirmed prescription (${input.prescription.fileName})`,
@@ -358,7 +381,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const nextHistory = [
       {
-        id: `hist-${Date.now()}`,
+        id: makeId('hist'),
         patientId: target.patientId,
         category: 'medication_change' as const,
         title: `${target.name} ${target.strength} marked ${status}`,
@@ -398,7 +421,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const nextHistory = [
       {
-        id: `hist-${Date.now()}`,
+        id: makeId('hist'),
         patientId: target.patientId,
         category: 'refill' as const,
         title: `Refill logged for ${target.name} ${target.strength}`,
@@ -440,7 +463,7 @@ export const demoMedTwinService: IMedTwinService = {
     }
 
     const newAlert: CareAlert = {
-      id: `alert-${Date.now()}`,
+      id: makeId('alert'),
       patientId: input.patientId,
       caregiverId: acceptedConn.caregiverId,
       title: input.title,
@@ -454,7 +477,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const nextHistory = [
       {
-        id: `hist-${Date.now()}`,
+        id: makeId('hist'),
         patientId: input.patientId,
         category: 'caregiver_alert' as const,
         title: `Simulated Care Circle alert sent`,
@@ -500,7 +523,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const nextHistory = [
       {
-        id: `hist-${Date.now()}`,
+        id: makeId('hist'),
         patientId: target.patientId,
         category: 'caregiver_alert' as const,
         title: `Caregiver acknowledged alert`,
@@ -530,7 +553,7 @@ export const demoMedTwinService: IMedTwinService = {
     const nextCaregivers = [...state.caregivers];
     if (!caregiver) {
       caregiver = {
-        id: `cg-${Date.now()}`,
+        id: makeId('cg'),
         name: input.caregiverName,
         email: input.caregiverEmail,
         phoneLabel: 'Simulated Notification Channel',
@@ -539,7 +562,7 @@ export const demoMedTwinService: IMedTwinService = {
     }
 
     const newConn: CaregiverConnection = {
-      id: `conn-${Date.now()}`,
+      id: makeId('conn'),
       patientId: input.patientId,
       caregiverId: caregiver.id,
       caregiverName: caregiver.name,
@@ -619,7 +642,7 @@ export const demoMedTwinService: IMedTwinService = {
   ): MedTwinState {
     const newItem: FamilyMedicalHistoryItem = {
       ...item,
-      id: `fmh-${Date.now()}`,
+      id: makeId('fmh'),
       recordedAt: new Date().toISOString().slice(0, 10),
     };
     const updated: MedTwinState = {
@@ -635,7 +658,7 @@ export const demoMedTwinService: IMedTwinService = {
     input: { patientId: string; doctorId: string; doctorName: string; title: string; content: string },
   ): MedTwinState {
     const nowIso = new Date().toISOString();
-    const noteId = `note-${Date.now()}`;
+    const noteId = makeId('note');
     const newNote: ClinicianNote = {
       id: noteId,
       patientId: input.patientId,
@@ -659,7 +682,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const nextHistory = [
       {
-        id: `hist-${Date.now()}`,
+        id: makeId('hist'),
         patientId: input.patientId,
         category: 'clinician_note' as const,
         title: `Clinician note: ${input.title}`,
@@ -688,7 +711,7 @@ export const demoMedTwinService: IMedTwinService = {
     input: Omit<DadiNaniEntry, 'id' | 'createdAt'>,
   ): MedTwinState {
     const nowIso = new Date().toISOString();
-    const entryId = `dn-${Date.now()}`;
+    const entryId = makeId('dn');
     const newEntry: DadiNaniEntry = {
       ...input,
       id: entryId,
@@ -697,7 +720,7 @@ export const demoMedTwinService: IMedTwinService = {
 
     const nextHistory = [
       {
-        id: `hist-${Date.now()}`,
+        id: makeId('hist'),
         patientId: input.patientId,
         category: 'dadi_nani_share' as const,
         title: `Dadi-Nani Share: ${input.entryType.replace('_', ' ')}`,
@@ -768,7 +791,7 @@ export const demoMedTwinService: IMedTwinService = {
     const todayStr = getTodayIso();
     const nextNum = 10421 + state.patients.length;
     const newPatient = {
-      id: `pat-${Date.now()}`,
+      id: makeId('pat'),
       mrn: `MT-${nextNum}`,
       name: input.name,
       age: input.age,

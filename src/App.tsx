@@ -45,7 +45,7 @@ function AppRoutes() {
       <Route
         path="/digital-twin"
         element={
-          <AppShell title="Medication Digital Twin" subtitle="Baseline vs scenario simulation for supply & adherence">
+          <AppShell title="Your medication digital twin" subtitle="Baseline vs scenario simulation for supply & adherence">
             <DigitalTwinPage />
           </AppShell>
         }

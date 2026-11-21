@@ -4,16 +4,16 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/src/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-xl text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-xl text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
   {
     variants: {
       variant: {
-        default: 'bg-[#0D9488] text-white hover:bg-[#0F766E] shadow-xs',
-        secondary: 'bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-xs',
-        outline: 'border border-slate-200 bg-white text-slate-800 hover:bg-slate-50',
-        ghost: 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+        default: 'bg-[#0F766E] text-white hover:bg-[#115E59] shadow-xs',
+        secondary: 'bg-[#142D4E] text-white hover:bg-[#1B3B64] shadow-xs',
+        outline: 'border border-slate-200 bg-white/90 text-[#1E293B] hover:bg-slate-50',
+        ghost: 'text-[#1E293B] hover:bg-slate-100/80',
         danger: 'bg-red-600 text-white hover:bg-red-700 shadow-xs',
-        amber: 'bg-amber-600 text-white hover:bg-amber-700 shadow-xs',
+        amber: 'bg-[#D97706] text-white hover:bg-[#B45309] shadow-xs',
       },
       size: {
         default: 'h-10 px-4 py-2',

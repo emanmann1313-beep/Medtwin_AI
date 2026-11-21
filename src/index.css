@@ -5,18 +5,21 @@
   --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --color-navy-950: #0B1220;
-  --color-navy-900: #111A2E;
-  --color-canvas: #F6F8FC;
-  --color-teal-primary: #0D9488;
-  --color-blue-secondary: #2563EB;
+  --color-navy-950: #142D4E;
+  --color-navy-900: #1B3B64;
+  --color-canvas: #F8FAFC;
+  --color-teal-primary: #14B8A6;
+  --color-lavender-accent: #A78BFA;
+  --color-charcoal: #1E293B;
+  --color-emerald-accent: #10B981;
+  --color-amber-accent: #F59E0B;
 }
 
 @layer base {
   html {
     font-family: var(--font-sans);
-    background-color: #F6F8FC;
-    color: #0F172A;
+    background-color: #F8FAFC;
+    color: #1E293B;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

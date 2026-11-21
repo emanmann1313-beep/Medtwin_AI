@@ -103,7 +103,7 @@ export function AppShell({
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-[#0B1220] text-slate-200">
+    <div className="flex h-full flex-col bg-[#142D4E] text-slate-100">
       <div className="flex items-center justify-between px-4 py-5 border-b border-white/10">
         {!collapsed ? (
           <div className="min-w-0">
@@ -153,7 +153,7 @@ export function AppShell({
             id="demo-role-switcher"
             value={activeDemoAccount.id}
             onChange={(e) => handleRoleSwitch(e.target.value)}
-            className="w-full rounded-xl border border-white/15 bg-[#131E33] px-3 py-2 text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-[#0D9488]"
+            className="w-full rounded-xl border border-white/15 bg-[#1B3B64] px-3 py-2 text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
           >
             {DEMO_ACCOUNTS.map((acc) => (
               <option key={acc.id} value={acc.id}>
@@ -180,8 +180,8 @@ export function AppShell({
                 cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap',
                   isActive
-                    ? 'bg-[#0D9488] text-white'
-                    : 'text-slate-300 hover:bg-white/10 hover:text-white',
+                    ? 'bg-[#14B8A6] text-[#142D4E] font-semibold shadow-sm'
+                    : 'text-slate-200/90 hover:bg-white/10 hover:text-white',
                   collapsed && 'justify-center px-2',
                 )
               }
@@ -217,7 +217,12 @@ export function AppShell({
   );
 
   return (
-    <div className={cn('min-h-screen flex bg-[#F6F8FC] text-slate-900', dadiNaniMode && 'text-[16px]')}>
+    <div
+      className={cn(
+        'min-h-screen flex bg-[#F8FAFC] bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.06),transparent_48%),radial-gradient(ellipse_at_bottom_left,rgba(167,139,250,0.06),transparent_45%)] text-[#1E293B]',
+        dadiNaniMode && 'text-[16px]',
+      )}
+    >
       {/* Desktop Sidebar */}
       <aside
         className={cn(
@@ -287,9 +292,9 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setAssistantOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#0D9488] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#0F766E] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#142D4E] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#1B3B64] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <Bot className="h-4 w-4" />
+              <Bot className="h-4 w-4 text-[#14B8A6]" />
               <span>Voice &amp; Chat Bot</span>
             </button>
           </div>
