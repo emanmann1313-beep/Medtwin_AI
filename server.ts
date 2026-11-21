@@ -223,6 +223,378 @@ async function startServer() {
     }
   });
 
+  // ---------------------------------------------------------------------------
+  // Backend-Owned Caregiver Module Calculations & Permission Redaction
+  // ---------------------------------------------------------------------------
+  function addDaysToIso(isoDate: string, days: number): string {
+    const parts = isoDate.split('-').map(Number);
+    const dt = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + days));
+    return dt.toISOString().slice(0, 10);
+  }
+
+  interface ServerMedication {
+    id: string;
+    patientId: string;
+    name: string;
+    strength: string;
+    scheduledTimes: string[];
+    asNeeded?: boolean;
+    startDate: string;
+    endDate?: string;
+    remainingQuantity?: number;
+    unitLabel: string;
+    status: string;
+  }
+
+  interface ServerDoseLog {
+    patientId: string;
+    medicationId: string;
+    scheduledDate: string;
+    scheduledTime: string;
+    status: 'taken' | 'skipped';
+  }
+
+  interface ServerConnection {
+    patientId: string;
+    caregiverId: string;
+    status: string;
+    permissions: {
+      viewSchedules?: boolean;
+      receiveDoseAlerts?: boolean;
+      viewHistoryAndReports?: boolean;
+      viewClinicianNotes?: boolean;
+    };
+  }
+
+  interface ServerPatient {
+    id: string;
+    name: string;
+    mrn: string;
+  }
+
+  function computeServerAdherence(
+    patientId: string,
+    periodDays: number,
+    todayStr: string,
+    nowHhMm: string,
+    medications: ServerMedication[],
+    doseLogs: ServerDoseLog[],
+  ) {
+    let scheduledDueCount = 0;
+    let takenCount = 0;
+    let skippedCount = 0;
+    let unconfirmedCount = 0;
+    let todayTaken = 0;
+    let todayTotal = 0;
+
+    const activeMeds = medications.filter(
+      (m) => m.patientId === patientId && m.status === 'active' && !m.asNeeded,
+    );
+
+    for (let offset = periodDays - 1; offset >= 0; offset--) {
+      const dateStr = addDaysToIso(todayStr, -offset);
+      for (const med of activeMeds) {
+        if (dateStr < med.startDate) continue;
+        if (med.endDate && dateStr > med.endDate) continue;
+
+        for (const timeStr of med.scheduledTimes ?? []) {
+          const log = doseLogs.find(
+            (l) =>
+              l.patientId === patientId &&
+              l.medicationId === med.id &&
+              l.scheduledDate === dateStr &&
+              l.scheduledTime === timeStr,
+          );
+
+          if (dateStr === todayStr) {
+            todayTotal += 1;
+            if (log?.status === 'taken') todayTaken += 1;
+          }
+
+          const isDue =
+            dateStr < todayStr ||
+            (dateStr === todayStr && (Boolean(log) || timeStr <= nowHhMm));
+
+          if (!isDue) continue;
+          scheduledDueCount += 1;
+          if (log?.status === 'taken') {
+            takenCount += 1;
+          } else if (log?.status === 'skipped') {
+            skippedCount += 1;
+          } else {
+            unconfirmedCount += 1;
+          }
+        }
+      }
+    }
+
+    return {
+      scheduledDueCount,
+      takenCount,
+      skippedCount,
+      unconfirmedCount,
+      todayTaken,
+      todayTotal,
+      adherencePct:
+        scheduledDueCount > 0 ? Math.round((takenCount / scheduledDueCount) * 100) : null,
+    };
+  }
+
+  function computeServerRefillCountdowns(
+    patientId: string,
+    todayStr: string,
+    medications: ServerMedication[],
+    viewSchedulesAllowed: boolean,
+  ) {
+    const activeMeds = medications.filter(
+      (m) => m.patientId === patientId && m.status === 'active',
+    );
+
+    if (!viewSchedulesAllowed) {
+      return [];
+    }
+
+    return activeMeds
+      .map((med) => {
+        const dailyUsage = med.asNeeded ? 0 : (med.scheduledTimes ?? []).length;
+        const qty = typeof med.remainingQuantity === 'number' ? med.remainingQuantity : null;
+        const daysRemaining =
+          qty !== null && dailyUsage > 0 ? Math.floor(qty / dailyUsage) : null;
+        const estimatedRefillDate =
+          daysRemaining !== null ? addDaysToIso(todayStr, daysRemaining) : null;
+
+        let urgency: 'critical' | 'warning' | 'nominal' = 'nominal';
+        if (daysRemaining !== null) {
+          if (daysRemaining <= 2) {
+            urgency = 'critical';
+          } else if (daysRemaining <= 7) {
+            urgency = 'warning';
+          }
+        }
+
+        return {
+          medication_id: med.id,
+          medication_name: med.name,
+          strength: med.strength,
+          remaining_quantity: qty,
+          unit_label: med.unitLabel,
+          daily_usage: dailyUsage,
+          days_remaining: daysRemaining,
+          estimated_refill_date: estimatedRefillDate,
+          urgency,
+          redacted: false,
+        };
+      })
+      .sort((a, b) => {
+        const rank = { critical: 0, warning: 1, nominal: 2 };
+        if (rank[a.urgency] !== rank[b.urgency]) return rank[a.urgency] - rank[b.urgency];
+        return (a.days_remaining ?? 999) - (b.days_remaining ?? 999);
+      });
+  }
+
+  function computeServerRedactedTwin(
+    patientId: string,
+    todayStr: string,
+    medications: ServerMedication[],
+    perms: ServerConnection['permissions'] | undefined,
+  ) {
+    const viewSchedules = Boolean(perms?.viewSchedules);
+    const viewHistoryAndReports = Boolean(perms?.viewHistoryAndReports);
+
+    if (!viewSchedules) {
+      return {
+        patient_id: patientId,
+        access_level: 'redacted',
+        redaction_reason:
+          'Patient has not enabled the "view_schedules" consent scope for this Care Circle link.',
+        projected_adherence_14d_pct: null,
+        supply_runout_risk_count: 0,
+        next_supply_gap_date: null,
+        continuity_note:
+          'Digital Twin supply and adherence insights are hidden until schedule consent is granted.',
+        disclaimer:
+          'Medication continuity simulation only; no clinical diagnosis or unvalidated predictions.',
+      };
+    }
+
+    const activeMeds = medications.filter(
+      (m) =>
+        m.patientId === patientId &&
+        m.status === 'active' &&
+        !m.asNeeded &&
+        (m.scheduledTimes ?? []).length > 0,
+    );
+
+    const countdowns = computeServerRefillCountdowns(patientId, todayStr, medications, true);
+    const lowStock = countdowns.filter((c) => c.urgency === 'critical' || c.urgency === 'warning');
+    const firstGap = countdowns.find((c) => c.days_remaining !== null && c.days_remaining < 14);
+
+    if (!viewHistoryAndReports) {
+      return {
+        patient_id: patientId,
+        access_level: 'schedule_only',
+        redaction_reason:
+          'Enable "view_history_reports" consent to view 14-day Digital Twin continuity projections.',
+        projected_adherence_14d_pct: null,
+        supply_runout_risk_count: lowStock.length,
+        next_supply_gap_date: null,
+        continuity_note:
+          lowStock.length > 0
+            ? `${lowStock.length} active medication(s) fall within the 7-day refill window based on current schedule counts.`
+            : 'Current active schedules have more than 7 days of supply recorded.',
+        disclaimer:
+          'Restricted to schedule-level supply counts per caregiver consent; non-diagnostic.',
+      };
+    }
+
+    // Deterministic 14-day supply coverage calculation without refill replenishment
+    let scheduled14d = 0;
+    let covered14d = 0;
+    for (const med of activeMeds) {
+      const perDay = med.scheduledTimes.length;
+      const stock = typeof med.remainingQuantity === 'number' ? med.remainingQuantity : 0;
+      const totalNeeded = perDay * 14;
+      scheduled14d += totalNeeded;
+      covered14d += Math.min(stock, totalNeeded);
+    }
+
+    const projectedPct = scheduled14d > 0 ? Math.round((covered14d / scheduled14d) * 100) : 100;
+
+    return {
+      patient_id: patientId,
+      access_level: 'full',
+      projected_adherence_14d_pct: projectedPct,
+      supply_runout_risk_count: lowStock.length,
+      next_supply_gap_date: firstGap?.estimated_refill_date ?? null,
+      continuity_note:
+        lowStock.length > 0
+          ? `Without a refill, ${lowStock.map((m) => m.medication_name).join(', ')} will reach depletion within ${lowStock[0].days_remaining ?? 0} day(s), limiting 14-day schedule coverage to ${projectedPct}%.`
+          : `Recorded stock covers 100% of scheduled doses over the next 14 days (${projectedPct}% continuity).`,
+      disclaimer:
+        'Deterministic supply & adherence continuity model from recorded stock and schedule; non-diagnostic.',
+    };
+  }
+
+  app.post('/api/caregiver/insights', (req, res) => {
+    try {
+      const {
+        todayStr = new Date().toISOString().slice(0, 10),
+        nowHhMm = new Date().toISOString().slice(11, 16),
+        caregiverId,
+        patients = [],
+        connections = [],
+        medications = [],
+        doseLogs = [],
+      } = (req.body ?? {}) as {
+        todayStr?: string;
+        nowHhMm?: string;
+        caregiverId?: string;
+        patients?: ServerPatient[];
+        connections?: ServerConnection[];
+        medications?: ServerMedication[];
+        doseLogs?: ServerDoseLog[];
+      };
+
+      const adherenceSummaries: Record<string, unknown> = {};
+      const refillCountdownsByPatient: Record<string, unknown[]> = {};
+      const digitalTwinInsightsByPatient: Record<string, unknown> = {};
+
+      const relevantConnections = connections.filter(
+        (c) => (!caregiverId || c.caregiverId === caregiverId) && c.status === 'accepted',
+      );
+
+      for (const conn of relevantConnections) {
+        const pat = patients.find((p) => p.id === conn.patientId);
+        if (!pat) continue;
+        const canViewSchedules = Boolean(conn.permissions?.viewSchedules);
+
+        if (canViewSchedules) {
+          const m7 = computeServerAdherence(pat.id, 7, todayStr, nowHhMm, medications, doseLogs);
+          const m30 = computeServerAdherence(pat.id, 30, todayStr, nowHhMm, medications, doseLogs);
+
+          adherenceSummaries[pat.id] = {
+            patient_id: pat.id,
+            patient_name: pat.name,
+            mrn: pat.mrn,
+            access_granted: true,
+            today_taken: m7.todayTaken,
+            today_total: m7.todayTotal,
+            adherence_7d_pct: m7.adherencePct,
+            adherence_30d_pct: m30.adherencePct,
+            taken_7d: m7.takenCount,
+            due_7d: m7.scheduledDueCount,
+            skipped_7d: m7.skippedCount,
+            unconfirmed_7d: m7.unconfirmedCount,
+            calculated_by: 'backend-api',
+          };
+        } else {
+          adherenceSummaries[pat.id] = {
+            patient_id: pat.id,
+            patient_name: pat.name,
+            mrn: pat.mrn,
+            access_granted: false,
+            today_taken: 0,
+            today_total: 0,
+            adherence_7d_pct: null,
+            adherence_30d_pct: null,
+            taken_7d: 0,
+            due_7d: 0,
+            skipped_7d: 0,
+            unconfirmed_7d: 0,
+            calculated_by: 'backend-api',
+          };
+        }
+
+        refillCountdownsByPatient[pat.id] = computeServerRefillCountdowns(
+          pat.id,
+          todayStr,
+          medications,
+          canViewSchedules,
+        );
+
+        digitalTwinInsightsByPatient[pat.id] = computeServerRedactedTwin(
+          pat.id,
+          todayStr,
+          medications,
+          conn.permissions,
+        );
+      }
+
+      res.json({
+        calculatedBy: 'backend-api',
+        generatedAt: new Date().toISOString(),
+        adherenceSummaries,
+        refillCountdownsByPatient,
+        digitalTwinInsightsByPatient,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to compute caregiver insights.';
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  app.post('/api/caregiver/alerts/acknowledge', (req, res) => {
+    const { alertId, caregiverName, followUpNote } = (req.body ?? {}) as {
+      alertId?: string;
+      caregiverName?: string;
+      followUpNote?: string;
+    };
+
+    if (!alertId || !caregiverName) {
+      res.status(400).json({ error: 'alertId and caregiverName are required.' });
+      return;
+    }
+
+    res.json({
+      ok: true,
+      alertId,
+      delivery_status: 'acknowledged',
+      acknowledged_at: new Date().toISOString(),
+      acknowledged_by: caregiverName,
+      follow_up_note: followUpNote?.trim() || undefined,
+    });
+  });
+
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
