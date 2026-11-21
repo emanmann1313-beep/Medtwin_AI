@@ -81,7 +81,7 @@ export function MedicationsPage() {
               Confirmed schedules, start/end dates, recorded remaining supply, and refill forecasts
             </CardDescription>
           </div>
-          <div className="inline-flex rounded-xl bg-slate-100 p-1">
+          <div className="inline-flex rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-1 dark:border-[#334155] dark:bg-[#0B1220]">
             {(['all', 'active', 'completed', 'stopped'] as const).map((st) => (
               <button
                 key={st}
@@ -90,8 +90,8 @@ export function MedicationsPage() {
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors cursor-pointer',
                   statusFilter === st
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900',
+                    ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
+                    : 'text-[#64748B] hover:text-[#172554] dark:text-[#94A3B8] dark:hover:text-[#F8FAFC]',
                 )}
               >
                 {st}
@@ -102,7 +102,7 @@ export function MedicationsPage() {
 
         <CardContent>
           {patientMeds.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-500">
+            <p className="py-8 text-center text-sm text-[#64748B] dark:text-[#94A3B8]">
               No medications match this status filter.
             </p>
           ) : (
@@ -112,54 +112,56 @@ export function MedicationsPage() {
                 return (
                   <div
                     key={med.id}
-                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 space-y-4"
+                    className="flex flex-col justify-between rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-5 space-y-4 dark:border-[#334155] dark:bg-[#0B1220]/70"
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-display text-base font-semibold text-slate-900">
+                          <h3 className="font-display text-base font-semibold text-[#172554] dark:text-[#F8FAFC]">
                             {med.name} {med.strength}
                           </h3>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
                             {med.doseAndRoute} · Prescriber: {med.prescriberName ?? 'On file'}
                           </p>
                         </div>
                         <span
                           className={cn(
                             'text-xs font-semibold capitalize',
-                            med.status === 'active' && 'text-[#0D9488]',
-                            med.status === 'completed' && 'text-[#2563EB]',
-                            med.status === 'stopped' && 'text-slate-500',
+                            med.status === 'active' && 'text-[#0D9488] dark:text-[#14B8A6]',
+                            med.status === 'completed' && 'text-[#3B82F6] dark:text-[#60A5FA]',
+                            med.status === 'stopped' && 'text-[#64748B] dark:text-[#94A3B8]',
                           )}
                         >
                           {med.status}
                         </span>
                       </div>
 
-                      <p className="text-sm text-slate-700">{med.instructions}</p>
+                      <p className="text-sm text-[#172554]/85 dark:text-[#F8FAFC]/85">{med.instructions}</p>
 
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#E2E8F0] dark:border-[#334155] text-xs">
                         <div>
-                          <span className="text-slate-400 block">Scheduled times</span>
-                          <span className="font-mono text-slate-800 tabular-nums">
+                          <span className="text-[#64748B] dark:text-[#94A3B8] block">Scheduled times</span>
+                          <span className="font-mono text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                             {med.asNeeded
                               ? 'As needed (PRN)'
                               : med.scheduledTimes.map(formatTime12h).join(', ')}
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Start / End dates</span>
-                          <span className="text-slate-800 tabular-nums">
+                          <span className="text-[#64748B] dark:text-[#94A3B8] block">Start / End dates</span>
+                          <span className="text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                             {formatShortDate(med.startDate)} –{' '}
                             {med.endDate ? formatShortDate(med.endDate) : 'Ongoing'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Remaining quantity</span>
+                          <span className="text-[#64748B] dark:text-[#94A3B8] block">Remaining quantity</span>
                           <span
                             className={cn(
                               'font-mono font-semibold tabular-nums',
-                              forecast?.needsRefill ? 'text-amber-700' : 'text-slate-800',
+                              forecast?.needsRefill
+                                ? 'text-amber-700 dark:text-amber-400'
+                                : 'text-[#172554] dark:text-[#F8FAFC]',
                             )}
                           >
                             {typeof med.remainingQuantity === 'number'
@@ -168,8 +170,8 @@ export function MedicationsPage() {
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Estimated refill date</span>
-                          <span className="text-slate-800 tabular-nums">
+                          <span className="text-[#64748B] dark:text-[#94A3B8] block">Estimated refill date</span>
+                          <span className="text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                             {forecast?.estimatedRefillDate
                               ? formatShortDate(forecast.estimatedRefillDate)
                               : 'Not calculable'}
@@ -178,7 +180,7 @@ export function MedicationsPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#E2E8F0] dark:border-[#334155]">
                       <Button
                         type="button"
                         variant="outline"
@@ -238,7 +240,7 @@ export function MedicationsPage() {
               Daily, weekly, and monthly records distinguishing taken, skipped, due, scheduled, and overdue/unconfirmed doses
             </CardDescription>
           </div>
-          <div className="inline-flex rounded-xl bg-slate-100 p-1">
+          <div className="inline-flex rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-1 dark:border-[#334155] dark:bg-[#0B1220]">
             {(
               [
                 { id: 'daily', label: 'Daily' },
@@ -253,8 +255,8 @@ export function MedicationsPage() {
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                   horizon === tab.id
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900',
+                    ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
+                    : 'text-[#64748B] hover:text-[#172554] dark:text-[#94A3B8] dark:hover:text-[#F8FAFC]',
                 )}
               >
                 {tab.label}
@@ -274,11 +276,11 @@ export function MedicationsPage() {
             if (slots.length === 0) return null;
 
             return (
-              <div key={dateStr} className="space-y-2 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
-                <h4 className="font-display text-xs font-semibold text-slate-500">
+              <div key={dateStr} className="space-y-2 border-b border-[#E2E8F0] dark:border-[#334155] pb-4 last:border-0 last:pb-0">
+                <h4 className="font-display text-xs font-semibold text-[#64748B] dark:text-[#94A3B8]">
                   {dateStr === todayStr ? `Today · ${formatShortDate(dateStr)}` : formatShortDate(dateStr)}
                 </h4>
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
                   {slots.map((slot) => {
                     const stateText =
                       slot.state === 'taken'
@@ -292,14 +294,14 @@ export function MedicationsPage() {
                               : 'Scheduled';
                     const stateClass =
                       slot.state === 'taken'
-                        ? 'text-[#0D9488]'
+                        ? 'text-[#0D9488] dark:text-[#14B8A6]'
                         : slot.state === 'skipped'
-                          ? 'text-amber-700'
+                          ? 'text-amber-700 dark:text-amber-400'
                           : slot.state === 'overdue'
-                            ? 'text-red-600'
+                            ? 'text-red-600 dark:text-red-400'
                             : slot.state === 'due'
-                              ? 'text-[#2563EB]'
-                              : 'text-slate-500';
+                              ? 'text-[#3B82F6] dark:text-[#60A5FA]'
+                              : 'text-[#64748B] dark:text-[#94A3B8]';
 
                     return (
                       <div
@@ -307,21 +309,21 @@ export function MedicationsPage() {
                         className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-20 shrink-0 font-mono text-xs font-semibold text-slate-700 tabular-nums">
+                          <span className="w-20 shrink-0 font-mono text-xs font-semibold text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                             {formatTime12h(slot.scheduledTime)}
                           </span>
                           <div className="min-w-0">
-                            <span className="text-sm font-medium text-slate-900">
+                            <span className="text-sm font-medium text-[#172554] dark:text-[#F8FAFC]">
                               {slot.medication.name} {slot.medication.strength}
                             </span>
-                            <span aria-hidden="true" className="mx-2 text-slate-300">
+                            <span aria-hidden="true" className="mx-2 text-[#E2E8F0] dark:text-[#334155]">
                               ·
                             </span>
                             <span className={cn('text-xs font-semibold', stateClass)}>
                               {stateText}
                             </span>
                             {slot.log?.skipReason && (
-                              <span className="ml-2 text-xs text-slate-500">
+                              <span className="ml-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
                                 ({slot.log.skipReason})
                               </span>
                             )}
@@ -413,7 +415,7 @@ export function MedicationsPage() {
             className="space-y-4"
           >
             <div>
-              <label htmlFor="med-skip-reason" className="block text-xs font-medium text-slate-700 mb-1.5">
+              <label htmlFor="med-skip-reason" className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1.5">
                 Optional reason
               </label>
               <Input

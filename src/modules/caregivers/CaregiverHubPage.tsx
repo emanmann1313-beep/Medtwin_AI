@@ -216,23 +216,23 @@ export function CaregiverHubPage() {
   return (
     <div className="space-y-6">
       {/* Top Caregiver Workspace Header + Demo Adapter Notice */}
-      <Card className="border-slate-200/90 bg-gradient-to-br from-white via-white to-[#14B8A6]/[0.05]">
+      <Card className="border-[#E2E8F0] bg-[#FFFFFF] dark:border-[#334155] dark:bg-[#172033]">
         <CardContent className="pt-6 space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#0F766E]">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#0D9488] dark:text-[#14B8A6]">
                 <ShieldCheck className="h-4 w-4" />
                 <span>Caregiver Workspace · Consent-Governed Oversight</span>
                 {USE_MOCKS && (
-                  <span className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                  <span className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-300">
                     USE_MOCKS=true · Synthetic Demo &amp; Simulated Dispatch
                   </span>
                 )}
               </div>
-              <h2 className="font-display text-2xl font-bold tracking-tight text-[#142D4E]">
+              <h2 className="font-display text-2xl font-bold tracking-tight text-[#172554] dark:text-[#F8FAFC]">
                 {activeCaregiver.name}’s Caregiver Dashboard
               </h2>
-              <p className="text-sm text-slate-600 max-w-2xl">
+              <p className="text-sm text-[#64748B] dark:text-[#94A3B8] max-w-2xl">
                 Monitor linked patient medication adherence, refill countdowns (warning &le;7d, critical &le;2d),
                 permission-redacted Digital Twin supply insights, and missed-dose alerts.
               </p>
@@ -256,57 +256,57 @@ export function CaregiverHubPage() {
 
           {/* 4-column summary strip */}
           <div className="grid grid-cols-2 gap-3 pt-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200/80 bg-[#F8FAFC] p-4">
-              <span className="text-xs font-medium text-slate-500">Linked Patients</span>
-              <div className="mt-1 font-display text-2xl font-bold text-[#142D4E] tabular-nums">
+            <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 dark:border-[#334155] dark:bg-[#0B1220]">
+              <span className="text-xs font-medium text-[#64748B] dark:text-[#94A3B8]">Linked Patients</span>
+              <div className="mt-1 font-display text-2xl font-bold text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                 {acceptedConnections.length}
               </div>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
                 {pendingInvites.length} pending invite{pendingInvites.length === 1 ? '' : 's'}
               </span>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 bg-[#F8FAFC] p-4">
-              <span className="text-xs font-medium text-slate-500">Open Alerts</span>
+            <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 dark:border-[#334155] dark:bg-[#0B1220]">
+              <span className="text-xs font-medium text-[#64748B] dark:text-[#94A3B8]">Open Alerts</span>
               <div
                 className={cn(
                   'mt-1 font-display text-2xl font-bold tabular-nums',
-                  openAlertsCount > 0 ? 'text-amber-700' : 'text-[#0F766E]',
+                  openAlertsCount > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-[#0D9488] dark:text-[#14B8A6]',
                 )}
               >
                 {openAlertsCount}
               </div>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
                 {myAlertRecords.length} total permitted alerts
               </span>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 bg-[#F8FAFC] p-4">
-              <span className="text-xs font-medium text-slate-500">Refill Countdowns</span>
+            <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 dark:border-[#334155] dark:bg-[#0B1220]">
+              <span className="text-xs font-medium text-[#64748B] dark:text-[#94A3B8]">Refill Countdowns</span>
               <div className="mt-1 flex items-baseline gap-2">
                 <span
                   className={cn(
                     'font-display text-2xl font-bold tabular-nums',
                     urgentRefillStats.critical > 0
-                      ? 'text-red-600'
+                      ? 'text-red-600 dark:text-red-400'
                       : urgentRefillStats.warning > 0
-                        ? 'text-amber-700'
-                        : 'text-[#10B981]',
+                        ? 'text-amber-700 dark:text-amber-400'
+                        : 'text-[#0D9488] dark:text-[#14B8A6]',
                   )}
                 >
                   {urgentRefillStats.critical + urgentRefillStats.warning}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-[#64748B] dark:text-[#94A3B8]">
                   ({urgentRefillStats.critical} critical &le;2d · {urgentRefillStats.warning} warn &le;7d)
                 </span>
               </div>
-              <span className="text-[11px] text-slate-500">Backend-computed thresholds</span>
+              <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">Backend-computed thresholds</span>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 bg-[#F8FAFC] p-4">
-              <span className="text-xs font-medium text-slate-500">Calculation Source</span>
-              <div className="mt-1 text-sm font-semibold text-[#142D4E] flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-[#14B8A6]" />
+            <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 dark:border-[#334155] dark:bg-[#0B1220]">
+              <span className="text-xs font-medium text-[#64748B] dark:text-[#94A3B8]">Calculation Source</span>
+              <div className="mt-1 text-sm font-semibold text-[#172554] dark:text-[#F8FAFC] flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-[#0D9488] dark:text-[#14B8A6]" />
                 <span>
                   {insights?.calculatedBy === 'backend-api'
                     ? 'Express Backend API'
@@ -315,7 +315,7 @@ export function CaregiverHubPage() {
                       : 'Demo Fallback'}
                 </span>
               </div>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
                 Consent scopes enforced server-side
               </span>
             </div>
@@ -327,10 +327,10 @@ export function CaregiverHubPage() {
       <section aria-label="Linked patients overview" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-display text-lg font-bold text-[#142D4E]">
+            <h3 className="font-display text-lg font-bold text-[#172554] dark:text-[#F8FAFC]">
               Linked patients ({acceptedConnections.length})
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
               Adherence metrics, refill countdowns, and Digital Twin insights automatically respect each patient’s 4 consent scopes.
             </p>
           </div>
@@ -338,7 +338,7 @@ export function CaregiverHubPage() {
 
         {acceptedConnections.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center text-sm text-slate-500">
+            <CardContent className="py-12 text-center text-sm text-[#64748B] dark:text-[#94A3B8]">
               No active accepted Care Circle links yet. Accept a pending invitation below or switch demo accounts.
             </CardContent>
           </Card>
@@ -365,10 +365,10 @@ export function CaregiverHubPage() {
 
               return (
                 <Card key={conn.id} className="overflow-hidden">
-                  <CardHeader className="border-b border-slate-100 pb-4">
+                  <CardHeader className="border-b border-[#E2E8F0] pb-4 dark:border-[#334155]">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
-                        <CardTitle className="text-lg text-[#142D4E]">{patient.name}</CardTitle>
+                        <CardTitle className="text-lg text-[#172554] dark:text-[#F8FAFC]">{patient.name}</CardTitle>
                         <CardDescription>
                           {conn.relationship} · {conn.contactPriority} contact · MRN {patient.mrn}
                         </CardDescription>
@@ -377,8 +377,8 @@ export function CaregiverHubPage() {
                         className={cn(
                           'inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-semibold',
                           patientOpenAlerts.length > 0
-                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : 'bg-[#10B981]/10 text-[#0F766E] border border-[#10B981]/25',
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700/50'
+                            : 'bg-[#CCFBF1] text-[#0D9488] border border-[#0D9488]/25 dark:bg-[#14B8A6]/15 dark:text-[#14B8A6] dark:border-[#14B8A6]/30',
                         )}
                       >
                         {patientOpenAlerts.length > 0 ? (
@@ -404,48 +404,50 @@ export function CaregiverHubPage() {
                     {/* Backend-Owned Adherence Summary */}
                     {conn.permissions.viewSchedules && adherence?.access_granted ? (
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        <div className="rounded-2xl bg-[#F8FAFC] p-3 border border-slate-100">
-                          <span className="text-[11px] text-slate-500 block">Today’s doses</span>
-                          <span className="font-mono text-base font-bold text-[#142D4E] tabular-nums">
+                        <div className="rounded-2xl bg-[#F8FAFC] p-3 border border-[#E2E8F0] dark:bg-[#0B1220] dark:border-[#334155]">
+                          <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] block">Today’s doses</span>
+                          <span className="font-mono text-base font-bold text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                             {adherence.today_taken} / {adherence.today_total}
                           </span>
                         </div>
-                        <div className="rounded-2xl bg-[#F8FAFC] p-3 border border-slate-100">
-                          <span className="text-[11px] text-slate-500 block">7-day adherence</span>
-                          <span className="font-mono text-base font-bold text-[#0F766E] tabular-nums">
+                        <div className="rounded-2xl bg-[#F8FAFC] p-3 border border-[#E2E8F0] dark:bg-[#0B1220] dark:border-[#334155]">
+                          <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] block">7-day adherence</span>
+                          <span className="font-mono text-base font-bold text-[#0D9488] dark:text-[#14B8A6] tabular-nums">
                             {adherence.adherence_7d_pct !== null
                               ? `${adherence.adherence_7d_pct}%`
                               : '—'}
                           </span>
                         </div>
-                        <div className="rounded-2xl bg-[#F8FAFC] p-3 border border-slate-100">
-                          <span className="text-[11px] text-slate-500 block">30-day adherence</span>
-                          <span className="font-mono text-base font-bold text-[#142D4E] tabular-nums">
+                        <div className="rounded-2xl bg-[#F8FAFC] p-3 border border-[#E2E8F0] dark:bg-[#0B1220] dark:border-[#334155]">
+                          <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] block">30-day adherence</span>
+                          <span className="font-mono text-base font-bold text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                             {adherence.adherence_30d_pct !== null
                               ? `${adherence.adherence_30d_pct}%`
                               : '—'}
                           </span>
                         </div>
-                        <div className="rounded-2xl bg-[#F8FAFC] p-3 border border-slate-100">
-                          <span className="text-[11px] text-slate-500 block">Unconfirmed (7d)</span>
+                        <div className="rounded-2xl bg-[#F8FAFC] p-3 border border-[#E2E8F0] dark:bg-[#0B1220] dark:border-[#334155]">
+                          <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] block">Unconfirmed (7d)</span>
                           <span
                             className={cn(
                               'font-mono text-base font-bold tabular-nums',
-                              adherence.unconfirmed_7d > 0 ? 'text-amber-700' : 'text-[#10B981]',
+                              adherence.unconfirmed_7d > 0
+                                ? 'text-amber-700 dark:text-amber-400'
+                                : 'text-[#0D9488] dark:text-[#14B8A6]',
                             )}
                           >
                             {adherence.unconfirmed_7d}
                           </span>
-                          <span className="block text-[10px] text-slate-400">
+                          <span className="block text-[10px] text-[#64748B] dark:text-[#94A3B8]">
                             {adherence.skipped_7d} skipped
                           </span>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-2.5 rounded-2xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-600">
-                        <Lock className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                      <div className="flex items-start gap-2.5 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 text-xs text-[#64748B] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#94A3B8]">
+                        <Lock className="h-4 w-4 text-[#64748B] dark:text-[#94A3B8] shrink-0 mt-0.5" />
                         <div>
-                          <span className="font-semibold text-slate-800 block">
+                          <span className="font-semibold text-[#172554] dark:text-[#F8FAFC] block">
                             Schedule &amp; adherence redacted
                           </span>
                           <span>
@@ -459,17 +461,17 @@ export function CaregiverHubPage() {
                     {conn.permissions.viewSchedules && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-[#142D4E] flex items-center gap-1.5">
-                            <Package className="h-3.5 w-3.5 text-[#0F766E]" />
+                          <span className="font-semibold text-[#172554] dark:text-[#F8FAFC] flex items-center gap-1.5">
+                            <Package className="h-3.5 w-3.5 text-[#0D9488] dark:text-[#14B8A6]" />
                             <span>Refill countdowns</span>
                           </span>
-                          <span className="text-[11px] text-slate-400">
+                          <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
                             Critical &le;2d · Warning &le;7d
                           </span>
                         </div>
 
                         {countdowns.length === 0 ? (
-                          <p className="text-xs text-slate-500">No active tracked supplies.</p>
+                          <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">No active tracked supplies.</p>
                         ) : (
                           <div className="space-y-1.5">
                             {countdowns.map((item) => (
@@ -478,10 +480,10 @@ export function CaregiverHubPage() {
                                 className={cn(
                                   'flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs',
                                   item.urgency === 'critical'
-                                    ? 'border-red-200 bg-red-50/75 text-red-900'
+                                    ? 'border-red-200 bg-red-50/75 text-red-900 dark:border-red-800/60 dark:bg-red-950/35 dark:text-red-200'
                                     : item.urgency === 'warning'
-                                      ? 'border-amber-200 bg-amber-50/75 text-amber-900'
-                                      : 'border-slate-100 bg-[#F8FAFC] text-slate-700',
+                                      ? 'border-amber-200 bg-amber-50/75 text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-200'
+                                      : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]',
                                 )}
                               >
                                 <div className="min-w-0">
@@ -502,10 +504,10 @@ export function CaregiverHubPage() {
                                     className={cn(
                                       'font-mono font-bold tabular-nums block',
                                       item.urgency === 'critical'
-                                        ? 'text-red-700'
+                                        ? 'text-red-700 dark:text-red-400'
                                         : item.urgency === 'warning'
-                                          ? 'text-amber-800'
-                                          : 'text-[#0F766E]',
+                                          ? 'text-amber-800 dark:text-amber-400'
+                                          : 'text-[#0D9488] dark:text-[#14B8A6]',
                                     )}
                                   >
                                     {item.days_remaining !== null
@@ -528,16 +530,16 @@ export function CaregiverHubPage() {
                       className={cn(
                         'rounded-2xl border p-4 space-y-2',
                         twin?.access_level === 'full'
-                          ? 'border-[#A78BFA]/35 bg-gradient-to-br from-[#F8FAFC] to-[#A78BFA]/[0.07]'
-                          : 'border-slate-200 bg-slate-50/80',
+                          ? 'border-[#0D9488]/30 bg-[#CCFBF1]/35 dark:border-[#14B8A6]/30 dark:bg-[#14B8A6]/10'
+                          : 'border-[#E2E8F0] bg-[#F8FAFC] dark:border-[#334155] dark:bg-[#0B1220]',
                       )}
                     >
                       <div className="flex items-center justify-between gap-2 text-xs">
-                        <span className="font-semibold text-[#142D4E] flex items-center gap-1.5">
-                          <Activity className="h-3.5 w-3.5 text-[#A78BFA]" />
+                        <span className="font-semibold text-[#172554] dark:text-[#F8FAFC] flex items-center gap-1.5">
+                          <Activity className="h-3.5 w-3.5 text-[#0D9488] dark:text-[#14B8A6]" />
                           <span>Digital Twin continuity insight</span>
                         </span>
-                        <span className="text-[11px] font-medium capitalize text-slate-500">
+                        <span className="text-[11px] font-medium capitalize text-[#64748B] dark:text-[#94A3B8]">
                           Access: {twin?.access_level.replace('_', ' ') ?? 'evaluating'}
                         </span>
                       </div>
@@ -547,40 +549,40 @@ export function CaregiverHubPage() {
                           {twin.access_level === 'full' && twin.projected_adherence_14d_pct !== null && (
                             <div className="flex flex-wrap items-center gap-4 text-xs py-1">
                               <div>
-                                <span className="text-slate-500">14-day supply coverage: </span>
-                                <span className="font-mono font-bold text-[#142D4E] tabular-nums">
+                                <span className="text-[#64748B] dark:text-[#94A3B8]">14-day supply coverage: </span>
+                                <span className="font-mono font-bold text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                                   {twin.projected_adherence_14d_pct}%
                                 </span>
                               </div>
                               <div>
-                                <span className="text-slate-500">Low-supply meds: </span>
-                                <span className="font-mono font-bold text-[#142D4E] tabular-nums">
+                                <span className="text-[#64748B] dark:text-[#94A3B8]">Low-supply meds: </span>
+                                <span className="font-mono font-bold text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                                   {twin.supply_runout_risk_count}
                                 </span>
                               </div>
                             </div>
                           )}
 
-                          <p className="text-xs text-slate-700 leading-relaxed">
+                          <p className="text-xs text-[#172554] dark:text-[#F8FAFC] leading-relaxed">
                             {twin.continuity_note}
                           </p>
                           {twin.redaction_reason && (
-                            <p className="text-[11px] text-amber-800 flex items-center gap-1">
+                            <p className="text-[11px] text-amber-800 dark:text-amber-300 flex items-center gap-1">
                               <Lock className="h-3 w-3 shrink-0" />
                               <span>{twin.redaction_reason}</span>
                             </p>
                           )}
-                          <p className="text-[11px] text-slate-400">{twin.disclaimer}</p>
+                          <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">{twin.disclaimer}</p>
                         </>
                       ) : (
-                        <p className="text-xs text-slate-500">Loading backend Digital Twin summary...</p>
+                        <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Loading backend Digital Twin summary...</p>
                       )}
                     </div>
 
                     {/* Footer update + permitted shortcuts */}
-                    <div className="flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-xs text-slate-500 truncate">
-                        <span className="font-medium text-slate-700">Last update: </span>
+                    <div className="flex flex-col gap-3 border-t border-[#E2E8F0] pt-3 sm:flex-row sm:items-center sm:justify-between dark:border-[#334155]">
+                      <p className="text-xs text-[#64748B] dark:text-[#94A3B8] truncate">
+                        <span className="font-medium text-[#172554] dark:text-[#F8FAFC]">Last update: </span>
                         {conn.permissions.viewHistoryAndReports && latestEvent
                           ? `${latestEvent.title} (${formatTimestamp(latestEvent.timestamp)})`
                           : conn.permissions.viewHistoryAndReports
@@ -631,7 +633,7 @@ export function CaregiverHubPage() {
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-[#142D4E]">
+              <CardTitle className="flex items-center gap-2 text-[#172554] dark:text-[#F8FAFC]">
                 <Bell className="h-4 w-4 text-[#F59E0B]" />
                 <span>Missed-dose alerts &amp; notification history (Simulated)</span>
               </CardTitle>
@@ -650,8 +652,8 @@ export function CaregiverHubPage() {
                     className={cn(
                       'rounded-xl px-3 py-1.5 text-xs font-medium capitalize transition-colors cursor-pointer',
                       alertStatusFilter === st
-                        ? 'bg-[#142D4E] text-white'
-                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                        ? 'bg-[#0D9488] text-white dark:bg-[#14B8A6] dark:text-[#0B1220]'
+                        : 'border border-[#E2E8F0] bg-[#FFFFFF] text-[#64748B] hover:bg-[#F8FAFC] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#94A3B8] dark:hover:bg-[#1E293B]',
                     )}
                   >
                     {st}
@@ -663,7 +665,7 @@ export function CaregiverHubPage() {
                 aria-label="Filter alerts by category"
                 value={alertTypeFilter}
                 onChange={(e) => setAlertTypeFilter(e.target.value as AlertFilterType)}
-                className="h-8 rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-[#142D4E]"
+                className="h-8 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-2.5 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]"
               >
                 <option value="all">All alert types</option>
                 <option value="missed_dose">Missed dose</option>
@@ -676,11 +678,11 @@ export function CaregiverHubPage() {
 
         <CardContent>
           {filteredAlerts.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-500">
+            <p className="py-10 text-center text-sm text-[#64748B] dark:text-[#94A3B8]">
               No caregiver alerts match your current filter criteria.
             </p>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
               {filteredAlerts.map((alert) => {
                 const isAck = alert.delivery_status === 'acknowledged';
                 const isFailed = alert.delivery_status === 'failed';
@@ -695,30 +697,30 @@ export function CaregiverHubPage() {
                   >
                     <div className="space-y-1.5 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="font-semibold text-[#142D4E]">{alert.patient_name}</span>
+                        <span className="font-semibold text-[#172554] dark:text-[#F8FAFC]">{alert.patient_name}</span>
                         <span aria-hidden="true">·</span>
-                        <span className="capitalize font-medium text-slate-600">
+                        <span className="capitalize font-medium text-[#64748B] dark:text-[#94A3B8]">
                           {alert.alert_type.replace('_', ' ')}
                         </span>
                         <span aria-hidden="true">·</span>
-                        <span className="font-medium text-amber-700">
+                        <span className="font-medium text-amber-700 dark:text-amber-400">
                           {alert.simulated ? 'Simulated dispatch' : 'Dispatch'}
                         </span>
                         <span aria-hidden="true">·</span>
-                        <span className="font-mono text-slate-400 tabular-nums">
+                        <span className="font-mono text-[#64748B] dark:text-[#94A3B8] tabular-nums">
                           {formatTimestamp(alert.created_at)}
                         </span>
                       </div>
 
-                      <h4 className="text-sm font-semibold text-slate-900">{alert.title}</h4>
-                      <p className="text-xs text-slate-600">{alert.reason}</p>
+                      <h4 className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">{alert.title}</h4>
+                      <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">{alert.reason}</p>
 
                       {/* Delivery lifecycle strip */}
                       <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
-                        <span className="text-slate-500">{alert.channel}</span>
+                        <span className="text-[#64748B] dark:text-[#94A3B8]">{alert.channel}</span>
                         <span aria-hidden="true">·</span>
                         {isFailed ? (
-                          <span className="font-semibold text-red-600">Delivery status: Failed</span>
+                          <span className="font-semibold text-red-600 dark:text-red-400">Delivery status: Failed</span>
                         ) : (
                           <div className="flex flex-wrap items-center gap-1">
                             {DELIVERY_STAGE_STEPS.map((stage, idx) => {
@@ -731,17 +733,17 @@ export function CaregiverHubPage() {
                                       'capitalize',
                                       isCurrent
                                         ? isAck
-                                          ? 'font-semibold text-[#0F766E]'
-                                          : 'font-semibold text-[#142D4E]'
+                                          ? 'font-semibold text-[#0D9488] dark:text-[#14B8A6]'
+                                          : 'font-semibold text-[#172554] dark:text-[#F8FAFC]'
                                         : reached
-                                          ? 'text-slate-600'
-                                          : 'text-slate-300',
+                                          ? 'text-[#64748B] dark:text-[#94A3B8]'
+                                          : 'text-[#CBD5E1] dark:text-[#475569]',
                                     )}
                                   >
                                     {stage}
                                   </span>
                                   {idx < DELIVERY_STAGE_STEPS.length - 1 && (
-                                    <span className="text-slate-300">&rarr;</span>
+                                    <span className="text-[#CBD5E1] dark:text-[#475569]">&rarr;</span>
                                   )}
                                 </React.Fragment>
                               );
@@ -751,7 +753,7 @@ export function CaregiverHubPage() {
                       </div>
 
                       {alert.follow_up_note && (
-                        <p className="mt-1 rounded-xl bg-[#14B8A6]/10 px-3 py-2 text-xs text-[#0F766E]">
+                        <p className="mt-1 rounded-xl bg-[#CCFBF1]/60 px-3 py-2 text-xs text-[#0F766E] dark:bg-[#14B8A6]/15 dark:text-[#14B8A6]">
                           <strong>Follow-up ({alert.acknowledged_by}):</strong> {alert.follow_up_note}
                         </p>
                       )}
@@ -759,7 +761,7 @@ export function CaregiverHubPage() {
 
                     <div className="shrink-0">
                       {isAck ? (
-                        <div className="inline-flex items-center gap-1.5 rounded-xl bg-[#10B981]/10 px-3 py-1.5 text-xs font-semibold text-[#0F766E]">
+                        <div className="inline-flex items-center gap-1.5 rounded-xl bg-[#CCFBF1] px-3 py-1.5 text-xs font-semibold text-[#0D9488] dark:bg-[#14B8A6]/15 dark:text-[#14B8A6]">
                           <CheckCircle2 className="h-4 w-4" />
                           <span>Acknowledged</span>
                         </div>
@@ -787,7 +789,7 @@ export function CaregiverHubPage() {
       {/* Caregiver Consent Links Directory (with ConsentList, ConsentRow, ScopeBadges, RevokeDialog) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-[#142D4E]">
+          <CardTitle className="text-[#172554] dark:text-[#F8FAFC]">
             Care Circle consent links ({consentRecords.length})
           </CardTitle>
           <CardDescription>
@@ -812,7 +814,7 @@ export function CaregiverHubPage() {
       <Dialog open={Boolean(ackTarget)} onOpenChange={(open) => !open && setAckTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-[#142D4E]">Acknowledge Care Circle alert</DialogTitle>
+            <DialogTitle className="text-[#172554] dark:text-[#F8FAFC]">Acknowledge Care Circle alert</DialogTitle>
             <DialogDescription>
               Confirm you reviewed this simulated alert for{' '}
               <strong>{ackTarget?.patient_name}</strong> and optionally log a follow-up note for the care team.
@@ -822,7 +824,7 @@ export function CaregiverHubPage() {
             <div>
               <label
                 htmlFor="ack-followup"
-                className="block text-xs font-medium text-slate-700 mb-1.5"
+                className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1.5"
               >
                 Follow-up note (optional)
               </label>

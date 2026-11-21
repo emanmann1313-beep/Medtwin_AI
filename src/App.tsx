@@ -1,9 +1,11 @@
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ToastProvider } from '@/src/components/ui/toast';
+import { ThemeProvider } from '@/src/context/ThemeContext';
 import { MedTwinProvider } from '@/src/context/MedTwinContext';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { PatientDashboardPage } from '@/src/modules/patient/PatientDashboardPage';
+import { LandingPage } from '@/src/modules/landing/LandingPage';
 import { DadiNaniModePage } from '@/src/modules/patient/DadiNaniModePage';
 import { PrescriptionScannerPage } from '@/src/modules/prescriptions/PrescriptionScannerPage';
 import { MedicationsPage } from '@/src/modules/medications/MedicationsPage';
@@ -18,8 +20,9 @@ import { HospitalTeamsPage } from '@/src/modules/hospital/HospitalTeamsPage';
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route
-        path="/"
+        path="/dashboard"
         element={
           <AppShell title="Patient Dashboard" subtitle="Daily schedule, adherence, and care circle overview">
             <PatientDashboardPage />
@@ -113,12 +116,14 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <MedTwinProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </MedTwinProvider>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <MedTwinProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </MedTwinProvider>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

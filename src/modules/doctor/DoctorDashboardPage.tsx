@@ -17,6 +17,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useMedTwin } from '@/src/context/MedTwinContext';
+import { useTheme } from '@/src/context/ThemeContext';
 import {
   buildExplainableAttentionItems,
   computeAdherenceMetrics,
@@ -34,6 +35,8 @@ type SortKey = 'name' | 'age' | 'adherence' | 'lastReview';
 
 export function DoctorDashboardPage() {
   const { state, setActivePatientId, addClinicianNote } = useMedTwin();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const activeDoctor =
     state.doctors.find((d) => d.id === state.activeDoctorId) ?? state.doctors[0];
 
@@ -281,31 +284,31 @@ export function DoctorDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">{activeDoctor.specialty}</p>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">{activeDoctor.specialty}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Unreviewed Care Circle alerts</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-amber-600">
+            <CardTitle className="text-3xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
               {unreviewedAlertsCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">Simulated caregiver alert queue</p>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Simulated caregiver alert queue</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Recent prescription updates</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-[#2563EB]">
+            <CardTitle className="text-3xl font-bold tabular-nums text-[#3B82F6] dark:text-[#60A5FA]">
               {recentRxCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">Confirmed digital schedules</p>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Confirmed digital schedules</p>
           </CardContent>
         </Card>
 
@@ -317,7 +320,7 @@ export function DoctorDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">Scheduled clinic reviews</p>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Scheduled clinic reviews</p>
           </CardContent>
         </Card>
       </div>
@@ -333,15 +336,15 @@ export function DoctorDashboardPage() {
               </CardDescription>
             </div>
 
-            <div className="inline-flex rounded-xl bg-slate-100 p-1">
+            <div className="inline-flex rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] p-1 dark:bg-[#0B1220] dark:border-[#334155]">
               <button
                 type="button"
                 onClick={() => setPanelScope('assigned')}
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium cursor-pointer',
                   panelScope === 'assigned'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600',
+                    ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
+                    : 'text-[#64748B] dark:text-[#94A3B8]',
                 )}
               >
                 My patients
@@ -351,7 +354,9 @@ export function DoctorDashboardPage() {
                 onClick={() => setPanelScope('all')}
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium cursor-pointer',
-                  panelScope === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600',
+                  panelScope === 'all'
+                    ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
+                    : 'text-[#64748B] dark:text-[#94A3B8]',
                 )}
               >
                 All hospital ({state.patients.length})
@@ -361,7 +366,7 @@ export function DoctorDashboardPage() {
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B] dark:text-[#94A3B8]" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -376,7 +381,7 @@ export function DoctorDashboardPage() {
               onChange={(e) =>
                 setAttentionFilter(e.target.value as 'all' | 'needs_attention' | 'nominal')
               }
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700"
+              className="h-10 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-3 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]"
             >
               <option value="all">Attention: All</option>
               <option value="needs_attention">Needs attention</option>
@@ -387,7 +392,7 @@ export function DoctorDashboardPage() {
               aria-label="Filter by refill status"
               value={refillFilter}
               onChange={(e) => setRefillFilter(e.target.value as 'all' | 'refill_needed')}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700"
+              className="h-10 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-3 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]"
             >
               <option value="all">Refill: All</option>
               <option value="refill_needed">Refill needed</option>
@@ -397,7 +402,7 @@ export function DoctorDashboardPage() {
               aria-label="Filter by last review"
               value={reviewFilter}
               onChange={(e) => setReviewFilter(e.target.value as 'all' | 'overdue_14d')}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700"
+              className="h-10 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-3 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]"
             >
               <option value="all">Last review: Any</option>
               <option value="overdue_14d">14+ days since review</option>
@@ -409,12 +414,12 @@ export function DoctorDashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-500">
+                <tr className="border-b border-[#E2E8F0] text-[#64748B] dark:border-[#334155] dark:text-[#94A3B8]">
                   <th className="py-2.5 pr-3 font-medium">
                     <button
                       type="button"
                       onClick={() => toggleSort('name')}
-                      className="inline-flex items-center gap-1 hover:text-slate-900 cursor-pointer"
+                      className="inline-flex items-center gap-1 hover:text-[#172554] dark:hover:text-[#F8FAFC] cursor-pointer"
                     >
                       <span>Patient</span>
                       <ArrowUpDown className="h-3 w-3" />
@@ -425,7 +430,7 @@ export function DoctorDashboardPage() {
                     <button
                       type="button"
                       onClick={() => toggleSort('age')}
-                      className="inline-flex items-center gap-1 hover:text-slate-900 cursor-pointer"
+                      className="inline-flex items-center gap-1 hover:text-[#172554] dark:hover:text-[#F8FAFC] cursor-pointer"
                     >
                       <span>Age</span>
                       <ArrowUpDown className="h-3 w-3" />
@@ -435,7 +440,7 @@ export function DoctorDashboardPage() {
                     <button
                       type="button"
                       onClick={() => toggleSort('adherence')}
-                      className="inline-flex items-center gap-1 hover:text-slate-900 cursor-pointer"
+                      className="inline-flex items-center gap-1 hover:text-[#172554] dark:hover:text-[#F8FAFC] cursor-pointer"
                     >
                       <span>7d Adherence</span>
                       <ArrowUpDown className="h-3 w-3" />
@@ -447,7 +452,7 @@ export function DoctorDashboardPage() {
                     <button
                       type="button"
                       onClick={() => toggleSort('lastReview')}
-                      className="inline-flex items-center gap-1 hover:text-slate-900 cursor-pointer"
+                      className="inline-flex items-center gap-1 hover:text-[#172554] dark:hover:text-[#F8FAFC] cursor-pointer"
                     >
                       <span>Last review</span>
                       <ArrowUpDown className="h-3 w-3" />
@@ -456,7 +461,7 @@ export function DoctorDashboardPage() {
                   <th className="py-2.5 pl-3 font-medium">Next follow-up</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
                 {filteredRows.map((row) => {
                   const isSelected = row.patient.id === selectedPatient.id;
                   return (
@@ -468,23 +473,25 @@ export function DoctorDashboardPage() {
                         setVisitSummary(null);
                       }}
                       className={cn(
-                        'cursor-pointer transition-colors hover:bg-slate-50',
-                        isSelected && 'bg-[#0D9488]/5',
+                        'cursor-pointer transition-colors hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B]',
+                        isSelected && 'bg-[#CCFBF1]/50 dark:bg-[#14B8A6]/12',
                       )}
                     >
-                      <td className="py-3 pr-3 font-semibold text-slate-900 whitespace-nowrap">
+                      <td className="py-3 pr-3 font-semibold text-[#172554] dark:text-[#F8FAFC] whitespace-nowrap">
                         {row.patient.name}
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-500 tabular-nums whitespace-nowrap">
+                      <td className="py-3 px-3 font-mono text-[#64748B] dark:text-[#94A3B8] tabular-nums whitespace-nowrap">
                         {row.patient.mrn}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono tabular-nums">
+                      <td className="py-3 px-3 text-right font-mono text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                         {row.patient.age}
                       </td>
                       <td
                         className={cn(
                           'py-3 px-3 text-right font-mono font-semibold tabular-nums',
-                          row.adherencePct < 80 ? 'text-amber-700' : 'text-[#0D9488]',
+                          row.adherencePct < 80
+                            ? 'text-amber-700 dark:text-amber-400'
+                            : 'text-[#0D9488] dark:text-[#14B8A6]',
                         )}
                       >
                         {row.adherencePct}%
@@ -493,19 +500,21 @@ export function DoctorDashboardPage() {
                         <span
                           className={cn(
                             'font-medium',
-                            row.needsRefill ? 'text-amber-700' : 'text-slate-600',
+                            row.needsRefill
+                              ? 'text-amber-700 dark:text-amber-400'
+                              : 'text-[#64748B] dark:text-[#94A3B8]',
                           )}
                         >
                           {row.needsRefill ? `Refill needed (${row.refillCount})` : 'Nominal'}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-slate-600 max-w-[240px] truncate">
+                      <td className="py-3 px-3 text-[#64748B] dark:text-[#94A3B8] max-w-[240px] truncate">
                         {row.primaryReason}
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-500 tabular-nums whitespace-nowrap">
+                      <td className="py-3 px-3 font-mono text-[#64748B] dark:text-[#94A3B8] tabular-nums whitespace-nowrap">
                         {formatShortDate(row.patient.lastReviewDate)}
                       </td>
-                      <td className="py-3 pl-3 font-mono text-slate-600 tabular-nums whitespace-nowrap">
+                      <td className="py-3 pl-3 font-mono text-[#64748B] dark:text-[#94A3B8] tabular-nums whitespace-nowrap">
                         {row.patient.nextFollowUpDate
                           ? formatShortDate(row.patient.nextFollowUpDate)
                           : 'Unscheduled'}
@@ -521,10 +530,10 @@ export function DoctorDashboardPage() {
 
       {/* Selected Patient Clinical Detail */}
       <Card>
-        <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader className="flex flex-col gap-3 border-b border-[#E2E8F0] pb-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#334155]">
           <div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-              <span className="font-mono text-slate-700">{selectedPatient.mrn}</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
+              <span className="font-mono text-[#172554] dark:text-[#F8FAFC]">{selectedPatient.mrn}</span>
               <span aria-hidden="true">·</span>
               <span>{selectedPatient.gender}, {selectedPatient.age} yrs</span>
               <span aria-hidden="true">·</span>
@@ -548,8 +557,8 @@ export function DoctorDashboardPage() {
 
         <CardContent className="pt-5 space-y-6">
           {summaryError && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+            <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-300">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
               <div>
                 <p className="font-semibold">AI Visit Summary unavailable</p>
                 <p>{summaryError}</p>
@@ -558,9 +567,9 @@ export function DoctorDashboardPage() {
           )}
 
           {visitSummary && (
-            <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-5 space-y-3">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-5 space-y-3 dark:border-blue-800/50 dark:bg-blue-950/30">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#2563EB]">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#3B82F6] dark:text-[#60A5FA]">
                   <ClipboardCheck className="h-4 w-4" />
                   <span>AI-Generated Visit Summary — Requires Clinician Review</span>
                 </div>
@@ -568,24 +577,24 @@ export function DoctorDashboardPage() {
                   Approve &amp; save to clinician notes
                 </Button>
               </div>
-              <p className="text-sm text-slate-800 leading-relaxed">
+              <p className="text-sm text-[#172554] dark:text-[#F8FAFC] leading-relaxed">
                 {visitSummary.summary.summaryParagraph}
               </p>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 text-xs">
                 <div>
-                  <p className="font-semibold text-slate-700 mb-1">Adherence observations</p>
-                  <ul className="list-disc pl-4 space-y-0.5 text-slate-600">
+                  <p className="font-semibold text-[#172554] dark:text-[#F8FAFC] mb-1">Adherence observations</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-[#64748B] dark:text-[#94A3B8]">
                     {visitSummary.summary.adherenceObservations.map((o, i) => (
                       <li key={i}>{o}</li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-700 mb-1">Cited record sources</p>
-                  <ul className="list-disc pl-4 space-y-0.5 text-slate-600">
+                  <p className="font-semibold text-[#172554] dark:text-[#F8FAFC] mb-1">Cited record sources</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-[#64748B] dark:text-[#94A3B8]">
                     {visitSummary.summary.citedSources.map((s) => (
                       <li key={s.id}>
-                        {s.label} <span className="font-mono text-slate-400">({s.id})</span>
+                        {s.label} <span className="font-mono text-[#64748B] dark:text-[#94A3B8]">({s.id})</span>
                       </li>
                     ))}
                   </ul>
@@ -604,26 +613,26 @@ export function DoctorDashboardPage() {
 
             <TabsContent value="meds" className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 p-4 text-xs space-y-1">
-                  <p className="font-semibold text-slate-900">Recorded conditions</p>
-                  <p className="text-slate-600">{selectedPatient.conditions.join(', ')}</p>
+                <div className="rounded-xl border border-[#E2E8F0] p-4 text-xs space-y-1 dark:border-[#334155]">
+                  <p className="font-semibold text-[#172554] dark:text-[#F8FAFC]">Recorded conditions</p>
+                  <p className="text-[#64748B] dark:text-[#94A3B8]">{selectedPatient.conditions.join(', ')}</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 p-4 text-xs space-y-1">
-                  <p className="font-semibold text-slate-900">Recorded allergies</p>
-                  <p className="text-slate-600">{selectedPatient.allergies.join(', ')}</p>
+                <div className="rounded-xl border border-[#E2E8F0] p-4 text-xs space-y-1 dark:border-[#334155]">
+                  <p className="font-semibold text-[#172554] dark:text-[#F8FAFC]">Recorded allergies</p>
+                  <p className="text-[#64748B] dark:text-[#94A3B8]">{selectedPatient.allergies.join(', ')}</p>
                 </div>
               </div>
 
-              <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 px-4">
+              <div className="divide-y divide-[#E2E8F0] rounded-xl border border-[#E2E8F0] px-4 dark:divide-[#334155] dark:border-[#334155]">
                 {selectedPatientMeds.map((m) => (
                   <div key={m.id} className="py-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {m.name} {m.strength} · <span className="capitalize text-[#0D9488]">{m.status}</span>
+                      <p className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
+                        {m.name} {m.strength} · <span className="capitalize text-[#0D9488] dark:text-[#14B8A6]">{m.status}</span>
                       </p>
-                      <p className="text-xs text-slate-600">{m.instructions}</p>
+                      <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">{m.instructions}</p>
                     </div>
-                    <span className="font-mono text-xs text-slate-500 tabular-nums">
+                    <span className="font-mono text-xs text-[#64748B] dark:text-[#94A3B8] tabular-nums">
                       {typeof m.remainingQuantity === 'number'
                         ? `${m.remainingQuantity} ${m.unitLabel} left`
                         : 'Qty unrecorded'}
@@ -633,12 +642,12 @@ export function DoctorDashboardPage() {
               </div>
 
               <div>
-                <h4 className="text-xs font-semibold text-slate-700 mb-2">Prescription history</h4>
+                <h4 className="text-xs font-semibold text-[#172554] dark:text-[#F8FAFC] mb-2">Prescription history</h4>
                 {patientRx.length === 0 ? (
-                  <p className="text-xs text-slate-500">No scanned prescriptions on file.</p>
+                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">No scanned prescriptions on file.</p>
                 ) : (
                   patientRx.map((rx) => (
-                    <p key={rx.id} className="text-xs text-slate-600">
+                    <p key={rx.id} className="text-xs text-[#64748B] dark:text-[#94A3B8]">
                       {rx.fileName} · Confirmed {formatTimestamp(rx.confirmedAt ?? rx.createdAt)}
                     </p>
                   ))
@@ -649,17 +658,25 @@ export function DoctorDashboardPage() {
             <TabsContent value="adherence" className="space-y-6">
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900 mb-2">
+                  <h4 className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC] mb-2">
                     30-day dose adherence ({selectedMetrics30.adherencePct ?? '—'}%)
                   </h4>
                   <div className="h-56 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={selectedMetrics30.dailySeries}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                        <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748B' }} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#64748B' }} />
-                        <Tooltip />
-                        <Bar dataKey="taken" stackId="a" fill="#0D9488" name="Taken" />
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#E2E8F0'} vertical={false} />
+                        <XAxis dataKey="label" tick={{ fontSize: 10, fill: isDark ? '#94A3B8' : '#64748B' }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: isDark ? '#94A3B8' : '#64748B' }} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: isDark ? '#172033' : '#FFFFFF',
+                            borderColor: isDark ? '#334155' : '#E2E8F0',
+                            color: isDark ? '#F8FAFC' : '#172554',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                          }}
+                        />
+                        <Bar dataKey="taken" stackId="a" fill={isDark ? '#14B8A6' : '#0D9488'} name="Taken" />
                         <Bar dataKey="skipped" stackId="a" fill="#D97706" name="Skipped" />
                         <Bar dataKey="unconfirmed" stackId="a" fill="#DC2626" name="Unconfirmed" />
                       </BarChart>
@@ -667,25 +684,25 @@ export function DoctorDashboardPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 p-4 space-y-3">
-                  <h4 className="text-sm font-semibold text-slate-900">
+                <div className="rounded-xl border border-[#E2E8F0] p-4 space-y-3 dark:border-[#334155]">
+                  <h4 className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
                     Digital Twin 14-day refill-delay preview (3-day delay)
                   </h4>
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <span className="text-slate-400 block">Simulated adherence</span>
-                      <span className="font-mono text-lg font-bold text-[#0D9488] tabular-nums">
+                      <span className="text-[#64748B] dark:text-[#94A3B8] block">Simulated adherence</span>
+                      <span className="font-mono text-lg font-bold text-[#0D9488] dark:text-[#14B8A6] tabular-nums">
                         {selectedTwin.scenarioAdherencePct}%
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block">Projected supply-gap days</span>
-                      <span className="font-mono text-lg font-bold text-amber-700 tabular-nums">
+                      <span className="text-[#64748B] dark:text-[#94A3B8] block">Projected supply-gap days</span>
+                      <span className="font-mono text-lg font-bold text-amber-700 dark:text-amber-400 tabular-nums">
                         {selectedTwin.supplyGapDates.length}
                       </span>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
                     Medication-management simulation comparing baseline coverage ({selectedTwin.baselineCoveredDoses} doses) vs 3-day refill delay ({selectedTwin.scenarioCoveredDoses} doses).
                   </p>
                 </div>
@@ -695,7 +712,7 @@ export function DoctorDashboardPage() {
             <TabsContent value="notes" className="space-y-6">
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-slate-900">Record clinician note</h4>
+                  <h4 className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">Record clinician note</h4>
                   <form onSubmit={handleSaveNote} className="space-y-3">
                     <Input
                       value={noteTitle}
@@ -716,15 +733,15 @@ export function DoctorDashboardPage() {
 
                   <div className="space-y-3 pt-2">
                     {patientNotes.map((n) => (
-                      <div key={n.id} className="rounded-xl border border-slate-200 p-3.5 space-y-1.5">
+                      <div key={n.id} className="rounded-xl border border-[#E2E8F0] p-3.5 space-y-1.5 dark:border-[#334155]">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-slate-900">{n.title}</span>
-                          <span className="font-mono text-slate-400 tabular-nums">
+                          <span className="font-semibold text-[#172554] dark:text-[#F8FAFC]">{n.title}</span>
+                          <span className="font-mono text-[#64748B] dark:text-[#94A3B8] tabular-nums">
                             {formatTimestamp(n.createdAt)}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-600 whitespace-pre-wrap">{n.content}</p>
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-xs text-[#64748B] dark:text-[#94A3B8] whitespace-pre-wrap">{n.content}</p>
+                        <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
                           Audit: {n.auditTrail.map((a) => `${a.action} by ${a.actor}`).join(' · ')}
                         </p>
                       </div>
@@ -733,23 +750,23 @@ export function DoctorDashboardPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-slate-900">Uploaded reports &amp; Dadi-Nani patient shares</h4>
+                  <h4 className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">Uploaded reports &amp; Dadi-Nani patient shares</h4>
                   {patientReports.map((r) => (
-                    <div key={r.id} className="rounded-xl border border-slate-200 p-3.5 text-xs space-y-1">
-                      <p className="font-semibold text-slate-900">
+                    <div key={r.id} className="rounded-xl border border-[#E2E8F0] p-3.5 text-xs space-y-1 dark:border-[#334155]">
+                      <p className="font-semibold text-[#172554] dark:text-[#F8FAFC]">
                         {r.title} ({r.reportType})
                       </p>
-                      <p className="text-slate-600">{r.summaryNote}</p>
+                      <p className="text-[#64748B] dark:text-[#94A3B8]">{r.summaryNote}</p>
                     </div>
                   ))}
                   {patientDadiNani.map((d) => (
-                    <div key={d.id} className="rounded-xl border border-amber-200 bg-amber-50/40 p-3.5 text-xs space-y-1">
-                      <p className="font-semibold text-amber-900">
+                    <div key={d.id} className="rounded-xl border border-amber-200 bg-amber-50/40 p-3.5 text-xs space-y-1 dark:border-amber-700/50 dark:bg-amber-950/20">
+                      <p className="font-semibold text-amber-900 dark:text-amber-300">
                         Patient Dadi-Nani share · {formatTimestamp(d.createdAt)}
                       </p>
-                      <p className="text-slate-700">{d.feelingSummary}</p>
+                      <p className="text-[#172554] dark:text-[#F8FAFC]">{d.feelingSummary}</p>
                       {d.homeComfortNote && (
-                        <p className="text-[#0F766E]">Home comfort: {d.homeComfortNote}</p>
+                        <p className="text-[#0D9488] dark:text-[#14B8A6]">Home comfort: {d.homeComfortNote}</p>
                       )}
                     </div>
                   ))}
@@ -759,17 +776,17 @@ export function DoctorDashboardPage() {
 
             <TabsContent value="team" className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 p-4 space-y-2">
-                  <h4 className="text-sm font-semibold text-slate-900">Authorized caregiver contacts</h4>
+                <div className="rounded-xl border border-[#E2E8F0] p-4 space-y-2 dark:border-[#334155]">
+                  <h4 className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">Authorized caregiver contacts</h4>
                   {patientCaregivers.length === 0 ? (
-                    <p className="text-xs text-slate-500">No accepted caregivers.</p>
+                    <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">No accepted caregivers.</p>
                   ) : (
                     patientCaregivers.map((c) => (
-                      <div key={c.id} className="text-xs text-slate-600 flex justify-between">
+                      <div key={c.id} className="text-xs text-[#64748B] dark:text-[#94A3B8] flex justify-between">
                         <span>
-                          <strong>{c.caregiverName}</strong> ({c.relationship} · {c.contactPriority})
+                          <strong className="text-[#172554] dark:text-[#F8FAFC]">{c.caregiverName}</strong> ({c.relationship} · {c.contactPriority})
                         </span>
-                        <span className="text-[#0D9488] inline-flex items-center gap-1">
+                        <span className="text-[#0D9488] dark:text-[#14B8A6] inline-flex items-center gap-1">
                           <CheckCircle2 className="h-3.5 w-3.5" /> Consented
                         </span>
                       </div>
@@ -777,15 +794,15 @@ export function DoctorDashboardPage() {
                   )}
                 </div>
 
-                <div className="rounded-xl border border-slate-200 p-4 space-y-2">
-                  <h4 className="text-sm font-semibold text-slate-900">Follow-up timeline</h4>
-                  <p className="text-xs text-slate-600">
+                <div className="rounded-xl border border-[#E2E8F0] p-4 space-y-2 dark:border-[#334155]">
+                  <h4 className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">Follow-up timeline</h4>
+                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
                     Next follow-up:{' '}
                     {selectedPatient.nextFollowUpDate
                       ? formatShortDate(selectedPatient.nextFollowUpDate)
                       : 'Not scheduled'}
                   </p>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
                     Last clinician review: {formatShortDate(selectedPatient.lastReviewDate)}
                   </p>
                 </div>

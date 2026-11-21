@@ -35,22 +35,22 @@ export function ConsentRow({
 
   const statusTone =
     consent.status === 'accepted'
-      ? 'text-[#0F766E]'
+      ? 'text-[#0D9488] dark:text-[#14B8A6]'
       : consent.status === 'invited'
-        ? 'text-amber-700'
-        : 'text-red-600';
+        ? 'text-amber-700 dark:text-amber-400'
+        : 'text-red-600 dark:text-red-400';
 
   return (
-    <div className="rounded-[20px] border border-slate-200/85 bg-white/95 p-5 shadow-[0_4px_18px_rgba(20,45,78,0.04)] space-y-4">
+    <div className="rounded-[20px] border border-[#E2E8F0] bg-[#FFFFFF] p-5 shadow-[0_4px_18px_rgba(23,37,84,0.04)] space-y-4 dark:border-[#334155] dark:bg-[#172033] dark:shadow-none">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-base font-semibold text-[#142D4E]">{primaryTitle}</h4>
-            <span className="text-xs text-slate-500">
+            <h4 className="text-base font-semibold text-[#172554] dark:text-[#F8FAFC]">{primaryTitle}</h4>
+            <span className="text-xs text-[#64748B] dark:text-[#94A3B8]">
               · {consent.relationship} · {consent.contact_priority} contact
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
             <span>
               Invited {formatShortDate(consent.invited_at)}
             </span>
@@ -105,7 +105,7 @@ export function ConsentRow({
 
       {/* Scope summary badges */}
       <div className="space-y-2">
-        <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#64748B] dark:text-[#94A3B8]">
           Consent scopes ({consent.scopes.length} of {CONSENT_SCOPE_LIST.length} granted)
         </span>
         <ScopeBadges scopes={consent.scopes} showInactive />
@@ -113,14 +113,14 @@ export function ConsentRow({
 
       {/* Inline granular permission switches (when editable on patient Care Circle view) */}
       {editable && consent.status !== 'revoked' && (
-        <div className="space-y-3 border-t border-slate-100 pt-3">
+        <div className="space-y-3 border-t border-[#E2E8F0] pt-3 dark:border-[#334155]">
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {CONSENT_SCOPE_LIST.map((meta) => {
               const checked = Boolean(permissions[meta.permissionKey]);
               return (
                 <label
                   key={meta.scope}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-[#F8FAFC] px-3 py-2 text-xs font-medium text-slate-700 cursor-pointer"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-xs font-medium text-[#172554] cursor-pointer dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]"
                 >
                   <span className="truncate" title={meta.description}>
                     {meta.label}
@@ -135,13 +135,13 @@ export function ConsentRow({
           </div>
 
           {onUpdateThreshold && (
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#64748B] dark:text-[#94A3B8] pt-1">
               <label className="flex items-center gap-2">
                 <span>Repeated missed-dose alert threshold:</span>
                 <select
                   value={consent.alert_threshold}
                   onChange={(e) => onUpdateThreshold(consent.id, Number(e.target.value))}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-[#142D4E]"
+                  className="rounded-lg border border-[#E2E8F0] bg-[#FFFFFF] px-2.5 py-1 text-xs font-medium text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]"
                 >
                   {[1, 2, 3, 4, 5].map((n) => (
                     <option key={n} value={n}>

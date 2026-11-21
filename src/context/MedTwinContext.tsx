@@ -27,6 +27,8 @@ interface MedTwinContextValue {
   activePatient: Patient;
   dadiNaniMode: boolean;
   setDadiNaniMode: (val: boolean) => void;
+  dadiNaniLanguage: 'en' | 'hi' | 'pa';
+  setDadiNaniLanguage: (lang: 'en' | 'hi' | 'pa') => void;
   assistantOpen: boolean;
   setAssistantOpen: (val: boolean) => void;
   switchDemoAccount: (accountId: string) => void;
@@ -75,6 +77,7 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [activeDemoAccountId, setActiveDemoAccountId] = useState<string>(DEMO_ACCOUNTS[0].id);
   const [dadiNaniMode, setDadiNaniMode] = useState<boolean>(false);
+  const [dadiNaniLanguage, setDadiNaniLanguage] = useState<'en' | 'hi' | 'pa'>('en');
   const [assistantOpen, setAssistantOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -439,6 +442,8 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
     activePatient,
     dadiNaniMode,
     setDadiNaniMode,
+    dadiNaniLanguage,
+    setDadiNaniLanguage,
     assistantOpen,
     setAssistantOpen,
     switchDemoAccount,

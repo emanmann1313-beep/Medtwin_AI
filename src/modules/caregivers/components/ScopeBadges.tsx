@@ -32,8 +32,8 @@ export function ScopeBadges({
 
   if (items.length === 0) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-        <Lock className="h-3.5 w-3.5 text-slate-400" />
+      <span className="inline-flex items-center gap-1.5 text-xs text-[#64748B] dark:text-[#94A3B8]">
+        <Lock className="h-3.5 w-3.5 text-[#64748B] dark:text-[#94A3B8]" />
         <span>Minimal contact only (no health record scopes granted)</span>
       </span>
     );
@@ -47,8 +47,8 @@ export function ScopeBadges({
         const baseClasses = cn(
           'inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-medium transition-colors',
           granted
-            ? 'border-[#14B8A6]/40 bg-[#14B8A6]/10 text-[#0F766E]'
-            : 'border-slate-200 bg-slate-50/80 text-slate-400',
+            ? 'border-[#0D9488]/30 bg-[#CCFBF1] text-[#0F766E] dark:border-[#14B8A6]/40 dark:bg-[#14B8A6]/15 dark:text-[#14B8A6]'
+            : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#94A3B8]',
           compact && 'px-2 py-0.5 text-[11px]',
         );
 
@@ -62,13 +62,13 @@ export function ScopeBadges({
               title={meta.description}
               className={cn(
                 baseClasses,
-                'cursor-pointer hover:border-[#0F766E]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]',
+                'cursor-pointer hover:border-[#0D9488]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] dark:hover:border-[#14B8A6]/60 dark:focus-visible:ring-[#14B8A6]',
               )}
             >
               {granted ? (
-                <ShieldCheck className="h-3.5 w-3.5 text-[#0F766E] shrink-0" />
+                <ShieldCheck className="h-3.5 w-3.5 text-[#0D9488] dark:text-[#14B8A6] shrink-0" />
               ) : (
-                <Icon className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <Icon className="h-3.5 w-3.5 text-[#64748B] dark:text-[#94A3B8] shrink-0" />
               )}
               <span>{meta.shortLabel}</span>
             </button>
@@ -78,9 +78,9 @@ export function ScopeBadges({
         return (
           <span key={meta.scope} className={baseClasses} title={meta.description}>
             {granted ? (
-              <Icon className="h-3.5 w-3.5 text-[#0F766E] shrink-0" />
+              <Icon className="h-3.5 w-3.5 text-[#0D9488] dark:text-[#14B8A6] shrink-0" />
             ) : (
-              <Lock className="h-3 w-3 text-slate-400 shrink-0" />
+              <Lock className="h-3 w-3 text-[#64748B] dark:text-[#94A3B8] shrink-0" />
             )}
             <span>{meta.shortLabel}</span>
           </span>

@@ -1,27 +1,52 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --color-navy-950: #142D4E;
-  --color-navy-900: #1B3B64;
+  --color-navy-950: #172554;
+  --color-navy-900: #1E3A8A;
   --color-canvas: #F8FAFC;
-  --color-teal-primary: #14B8A6;
-  --color-lavender-accent: #A78BFA;
-  --color-charcoal: #1E293B;
-  --color-emerald-accent: #10B981;
-  --color-amber-accent: #F59E0B;
+  --color-teal-primary: #0D9488;
+  --color-teal-bright: #14B8A6;
+  --color-blue-secondary: #3B82F6;
+  --color-highlight-teal: #CCFBF1;
 }
 
 @layer base {
-  html {
+  :root {
+    --mt-bg: #F8FAFC;
+    --mt-card: #FFFFFF;
+    --mt-text: #172554;
+    --mt-text-muted: #64748B;
+    --mt-accent: #0D9488;
+    --mt-accent-blue: #3B82F6;
+    --mt-border: #E2E8F0;
+    --mt-highlight: #CCFBF1;
+  }
+
+  html.dark {
+    --mt-bg: #0B1220;
+    --mt-card: #172033;
+    --mt-text: #F8FAFC;
+    --mt-text-muted: #94A3B8;
+    --mt-accent: #14B8A6;
+    --mt-accent-blue: #3B82F6;
+    --mt-border: #334155;
+    --mt-highlight: rgba(20, 184, 166, 0.16);
+  }
+
+  html,
+  body {
     font-family: var(--font-sans);
-    background-color: #F8FAFC;
-    color: #1E293B;
+    background-color: var(--mt-bg);
+    color: var(--mt-text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 150ms ease, color 150ms ease;
   }
 
   h1, h2, h3, h4, .font-display {
@@ -30,6 +55,11 @@
 
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  html.dark select option {
+    background-color: #172033;
+    color: #F8FAFC;
   }
 }
 

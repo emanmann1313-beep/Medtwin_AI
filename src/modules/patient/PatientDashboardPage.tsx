@@ -21,6 +21,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useMedTwin } from '@/src/context/MedTwinContext';
+import { useTheme } from '@/src/context/ThemeContext';
 import {
   buildDoseSlotsForDate,
   buildExplainableAttentionItems,
@@ -51,6 +52,8 @@ export function PatientDashboardPage() {
     undoDose,
   } = useMedTwin();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const [adherenceWindow, setAdherenceWindow] = useState<7 | 30>(7);
   const [skipModalSlot, setSkipModalSlot] = useState<{
@@ -136,15 +139,15 @@ export function PatientDashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-6" aria-busy="true">
-        <div className="h-24 rounded-2xl bg-slate-200/70 animate-pulse" />
+        <div className="h-24 rounded-2xl bg-[#E2E8F0]/70 dark:bg-[#172033] animate-pulse" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 rounded-2xl bg-slate-200/70 animate-pulse" />
+            <div key={i} className="h-28 rounded-2xl bg-[#E2E8F0]/70 dark:bg-[#172033] animate-pulse" />
           ))}
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 h-80 rounded-2xl bg-slate-200/70 animate-pulse" />
-          <div className="h-80 rounded-2xl bg-slate-200/70 animate-pulse" />
+          <div className="lg:col-span-2 h-80 rounded-2xl bg-[#E2E8F0]/70 dark:bg-[#172033] animate-pulse" />
+          <div className="h-80 rounded-2xl bg-[#E2E8F0]/70 dark:bg-[#172033] animate-pulse" />
         </div>
       </div>
     );
@@ -153,24 +156,24 @@ export function PatientDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Patient Welcome & Primary Actions */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-6 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 lg:flex-row lg:items-center lg:justify-between dark:border-[#334155] dark:bg-[#172033]">
         <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <span className="font-mono text-slate-700">{activePatient.mrn}</span>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
+            <span className="font-mono text-[#172554] dark:text-[#F8FAFC]">{activePatient.mrn}</span>
             <span aria-hidden="true">·</span>
             <span>Age {activePatient.age}</span>
             <span aria-hidden="true">·</span>
             <span>{activePatient.conditions.join(', ')}</span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="font-display text-2xl font-bold text-slate-900">
+            <h2 className="font-display text-2xl font-bold text-[#172554] dark:text-[#F8FAFC]">
               Welcome back, {activePatient.name}
             </h2>
             <select
               aria-label="Select patient profile"
               value={activePatient.id}
               onChange={(e) => setActivePatientId(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0D9488]"
+              className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1.5 text-xs font-medium text-[#172554] focus:outline-none focus:ring-2 focus:ring-[#0D9488] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC] dark:focus:ring-[#14B8A6]"
             >
               {state.patients.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -211,7 +214,7 @@ export function PatientDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
               Scheduled active doses for {formatShortDate(todayStr)}
             </p>
           </CardContent>
@@ -225,7 +228,7 @@ export function PatientDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500 tabular-nums">
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8] tabular-nums">
               {unconfirmedDueToday} unconfirmed due · {skippedToday} skipped
             </p>
           </CardContent>
@@ -234,15 +237,15 @@ export function PatientDashboardPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Recorded adherence (7d / 30d)</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-[#0D9488]">
+            <CardTitle className="text-3xl font-bold tabular-nums text-[#0D9488] dark:text-[#14B8A6]">
               {metrics7.adherencePct !== null ? `${metrics7.adherencePct}%` : '—'}
-              <span className="ml-2 text-base font-medium text-slate-400">
+              <span className="ml-2 text-base font-medium text-[#64748B] dark:text-[#94A3B8]">
                 / {metrics30.adherencePct !== null ? `${metrics30.adherencePct}%` : '—'}
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500 tabular-nums">
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8] tabular-nums">
               {metrics7.takenCount} taken of {metrics7.scheduledDueCount} due in 7d
             </p>
           </CardContent>
@@ -254,14 +257,16 @@ export function PatientDashboardPage() {
             <CardTitle
               className={cn(
                 'text-3xl font-bold tabular-nums',
-                approachingRefillCount > 0 ? 'text-amber-600' : 'text-slate-900',
+                approachingRefillCount > 0
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-[#172554] dark:text-[#F8FAFC]',
               )}
             >
               {approachingRefillCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
               Within configured refill threshold
             </p>
           </CardContent>
@@ -271,7 +276,7 @@ export function PatientDashboardPage() {
       {/* Main Grid: Today's Medication Timeline (Left 2 cols) + Next Dose & Care Attention (Right 1 col) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-[#E2E8F0] dark:border-[#334155] pb-4">
             <div>
               <CardTitle>Today’s medication timeline</CardTitle>
               <CardDescription>
@@ -279,29 +284,29 @@ export function PatientDashboardPage() {
               </CardDescription>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={() => navigate('/dadi-nani')}>
-              <HeartHandshake className="h-4 w-4 text-amber-600" />
+              <HeartHandshake className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               <span>Share in Dadi-Nani Mode</span>
             </Button>
           </CardHeader>
           <CardContent className="pt-4">
             {todaySlots.length === 0 ? (
               <div className="py-10 text-center">
-                <p className="text-sm font-medium text-slate-700">
+                <p className="text-sm font-medium text-[#172554] dark:text-[#F8FAFC]">
                   No scheduled doses for today.
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-[#64748B] dark:text-[#94A3B8]">
                   Scan a prescription or review as-needed medicines to get started.
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
                 {todaySlots.map((slot) => {
                   const stateLabelMap = {
-                    taken: { text: 'Taken', cls: 'text-[#0D9488]' },
-                    skipped: { text: 'Skipped', cls: 'text-amber-700' },
-                    overdue: { text: 'Overdue / Unconfirmed', cls: 'text-red-600' },
-                    due: { text: 'Due now', cls: 'text-[#2563EB]' },
-                    scheduled: { text: 'Scheduled', cls: 'text-slate-500' },
+                    taken: { text: 'Taken', cls: 'text-[#0D9488] dark:text-[#14B8A6]' },
+                    skipped: { text: 'Skipped', cls: 'text-amber-700 dark:text-amber-400' },
+                    overdue: { text: 'Overdue / Unconfirmed', cls: 'text-red-600 dark:text-red-400' },
+                    due: { text: 'Due now', cls: 'text-[#3B82F6] dark:text-[#60A5FA]' },
+                    scheduled: { text: 'Scheduled', cls: 'text-[#64748B] dark:text-[#94A3B8]' },
                   } as const;
                   const meta = stateLabelMap[slot.state];
 
@@ -311,26 +316,26 @@ export function PatientDashboardPage() {
                       className="flex flex-col gap-3 py-4 first:pt-1 last:pb-1 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="flex items-start gap-4 min-w-0">
-                        <div className="w-20 shrink-0 pt-0.5 font-mono text-sm font-semibold text-slate-800 tabular-nums">
+                        <div className="w-20 shrink-0 pt-0.5 font-mono text-sm font-semibold text-[#172554] dark:text-[#F8FAFC] tabular-nums">
                           {formatTime12h(slot.scheduledTime)}
                         </div>
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-semibold text-slate-900">
+                            <span className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
                               {slot.medication.name} {slot.medication.strength}
                             </span>
-                            <span aria-hidden="true" className="text-slate-300">
+                            <span aria-hidden="true" className="text-[#E2E8F0] dark:text-[#334155]">
                               ·
                             </span>
                             <span className={cn('text-xs font-semibold', meta.cls)}>
                               {meta.text}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-xs text-slate-500">
+                          <p className="mt-0.5 text-xs text-[#64748B] dark:text-[#94A3B8]">
                             {slot.medication.doseAndRoute} — {slot.medication.instructions}
                           </p>
                           {slot.log?.skipReason && (
-                            <p className="mt-1 text-xs text-amber-700">
+                            <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
                               Skip reason: {slot.log.skipReason}
                             </p>
                           )}
@@ -401,23 +406,25 @@ export function PatientDashboardPage() {
               <CardDescription>Next scheduled dose</CardDescription>
               {nextScheduledSlot ? (
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Clock className="h-5 w-5 text-[#2563EB]" />
+                  <Clock className="h-5 w-5 text-[#3B82F6] dark:text-[#60A5FA]" />
                   <span className="tabular-nums">
                     {formatTime12h(nextScheduledSlot.scheduledTime)}
                   </span>
                 </CardTitle>
               ) : (
-                <CardTitle className="text-lg text-[#0D9488]">All doses logged today</CardTitle>
+                <CardTitle className="text-lg text-[#0D9488] dark:text-[#14B8A6]">
+                  All doses logged today
+                </CardTitle>
               )}
             </CardHeader>
             <CardContent>
               {nextScheduledSlot ? (
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
                       {nextScheduledSlot.medication.name} {nextScheduledSlot.medication.strength}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 text-xs text-[#64748B] dark:text-[#94A3B8]">
                       {nextScheduledSlot.medication.instructions}
                     </p>
                   </div>
@@ -442,7 +449,7 @@ export function PatientDashboardPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
                   No remaining unlogged doses for today’s schedule.
                 </p>
               )}
@@ -451,10 +458,10 @@ export function PatientDashboardPage() {
 
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
-              <h3 className="font-display text-sm font-semibold text-slate-900">
+              <h3 className="font-display text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
                 Care attention ({attentionItems.length})
               </h3>
-              <span className="text-xs text-slate-500">Explainable triggers</span>
+              <span className="text-xs text-[#64748B] dark:text-[#94A3B8]">Explainable triggers</span>
             </div>
             <AttentionCards items={attentionItems.slice(0, 3)} />
           </div>
@@ -471,15 +478,15 @@ export function PatientDashboardPage() {
                 Confirmed taken doses divided by scheduled due doses. Missing logs remain distinct from skipped doses.
               </CardDescription>
             </div>
-            <div className="inline-flex rounded-xl bg-slate-100 p-1">
+            <div className="inline-flex rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-1 dark:border-[#334155] dark:bg-[#0B1220]">
               <button
                 type="button"
                 onClick={() => setAdherenceWindow(7)}
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                   adherenceWindow === 7
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900',
+                    ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
+                    : 'text-[#64748B] hover:text-[#172554] dark:text-[#94A3B8] dark:hover:text-[#F8FAFC]',
                 )}
               >
                 7 Days
@@ -490,8 +497,8 @@ export function PatientDashboardPage() {
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                   adherenceWindow === 30
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900',
+                    ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
+                    : 'text-[#64748B] hover:text-[#172554] dark:text-[#94A3B8] dark:hover:text-[#F8FAFC]',
                 )}
               >
                 30 Days
@@ -499,26 +506,58 @@ export function PatientDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-slate-600 tabular-nums">
+            <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-[#64748B] dark:text-[#94A3B8] tabular-nums">
               <span>
-                Taken: <strong className="text-[#0D9488]">{activeMetrics.takenCount}</strong>
+                Taken:{' '}
+                <strong className="text-[#0D9488] dark:text-[#14B8A6]">
+                  {activeMetrics.takenCount}
+                </strong>
               </span>
               <span>
-                Skipped: <strong className="text-amber-700">{activeMetrics.skippedCount}</strong>
+                Skipped:{' '}
+                <strong className="text-amber-700 dark:text-amber-400">
+                  {activeMetrics.skippedCount}
+                </strong>
               </span>
               <span>
                 Unconfirmed missing logs:{' '}
-                <strong className="text-red-600">{activeMetrics.unconfirmedCount}</strong>
+                <strong className="text-red-600 dark:text-red-400">
+                  {activeMetrics.unconfirmedCount}
+                </strong>
               </span>
             </div>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={activeMetrics.dailySeries}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748B' }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748B' }} />
-                  <Tooltip />
-                  <Bar dataKey="taken" stackId="a" fill="#0D9488" name="Taken" radius={[0, 0, 0, 0]} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={isDark ? '#334155' : '#E2E8F0'}
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? '#172033' : '#FFFFFF',
+                      borderColor: isDark ? '#334155' : '#E2E8F0',
+                      color: isDark ? '#F8FAFC' : '#172554',
+                      borderRadius: 12,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar
+                    dataKey="taken"
+                    stackId="a"
+                    fill={isDark ? '#14B8A6' : '#0D9488'}
+                    name="Taken"
+                    radius={[0, 0, 0, 0]}
+                  />
                   <Bar dataKey="skipped" stackId="a" fill="#D97706" name="Skipped" />
                   <Bar
                     dataKey="unconfirmed"
@@ -543,13 +582,13 @@ export function PatientDashboardPage() {
               {refillForecasts.map((r) => (
                 <div
                   key={r.medicationId}
-                  className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5 last:border-0 last:pb-0"
+                  className="flex items-center justify-between gap-3 border-b border-[#E2E8F0] dark:border-[#334155] pb-2.5 last:border-0 last:pb-0"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
+                    <p className="text-sm font-medium text-[#172554] dark:text-[#F8FAFC] truncate">
                       {r.medicationName} {r.strength}
                     </p>
-                    <p className="text-xs text-slate-500 tabular-nums">
+                    <p className="text-xs text-[#64748B] dark:text-[#94A3B8] tabular-nums">
                       {r.remainingQuantity !== null
                         ? `${r.remainingQuantity} ${r.unitLabel} left`
                         : 'Quantity not recorded'}
@@ -559,7 +598,9 @@ export function PatientDashboardPage() {
                   <span
                     className={cn(
                       'text-xs font-semibold whitespace-nowrap tabular-nums',
-                      r.needsRefill ? 'text-amber-700' : 'text-slate-600',
+                      r.needsRefill
+                        ? 'text-amber-700 dark:text-amber-400'
+                        : 'text-[#64748B] dark:text-[#94A3B8]',
                     )}
                   >
                     {r.daysRemaining !== null ? `${r.daysRemaining}d left` : 'PRN'}
@@ -581,23 +622,29 @@ export function PatientDashboardPage() {
             </CardHeader>
             <CardContent className="space-y-2.5">
               {patientConnections.length === 0 ? (
-                <p className="text-xs text-slate-500">No caregiver connections yet.</p>
+                <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
+                  No caregiver connections yet.
+                </p>
               ) : (
                 patientConnections.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center justify-between text-xs border-b border-slate-100 pb-2 last:border-0 last:pb-0"
+                    className="flex items-center justify-between text-xs border-b border-[#E2E8F0] dark:border-[#334155] pb-2 last:border-0 last:pb-0"
                   >
                     <div>
-                      <p className="font-semibold text-slate-900">{c.caregiverName}</p>
-                      <p className="text-slate-500">
+                      <p className="font-semibold text-[#172554] dark:text-[#F8FAFC]">
+                        {c.caregiverName}
+                      </p>
+                      <p className="text-[#64748B] dark:text-[#94A3B8]">
                         {c.relationship} · {c.contactPriority}
                       </p>
                     </div>
                     <span
                       className={cn(
                         'font-medium capitalize',
-                        c.status === 'accepted' ? 'text-[#0D9488]' : 'text-amber-700',
+                        c.status === 'accepted'
+                          ? 'text-[#0D9488] dark:text-[#14B8A6]'
+                          : 'text-amber-700 dark:text-amber-400',
                       )}
                     >
                       {c.status}
@@ -622,17 +669,19 @@ export function PatientDashboardPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
             {recentHistory.map((ev) => (
               <div
                 key={ev.id}
                 className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <p className="text-sm font-medium text-slate-900">{ev.title}</p>
-                  <p className="text-xs text-slate-500">{ev.details}</p>
+                  <p className="text-sm font-medium text-[#172554] dark:text-[#F8FAFC]">
+                    {ev.title}
+                  </p>
+                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">{ev.details}</p>
                 </div>
-                <div className="text-xs text-slate-400 font-mono tabular-nums shrink-0">
+                <div className="text-xs text-[#64748B] dark:text-[#94A3B8] font-mono tabular-nums shrink-0">
                   {formatTimestamp(ev.timestamp)} · {ev.actorName}
                 </div>
               </div>
@@ -668,7 +717,10 @@ export function PatientDashboardPage() {
             className="space-y-4"
           >
             <div>
-              <label htmlFor="skip-reason-input" className="block text-xs font-medium text-slate-700 mb-1.5">
+              <label
+                htmlFor="skip-reason-input"
+                className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1.5"
+              >
                 Optional reason (helps your doctor and Care Circle understand)
               </label>
               <Input

@@ -10,11 +10,13 @@ export function AttentionCards({ items }: { items: AttentionItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-5">
-        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#0D9488]" />
+      <div className="flex items-start gap-3 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-5 dark:border-[#334155] dark:bg-[#172033]">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#0D9488] dark:text-[#14B8A6]" />
         <div>
-          <p className="text-sm font-semibold text-slate-900">No active attention items</p>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
+            No active attention items
+          </p>
+          <p className="mt-0.5 text-xs text-[#64748B] dark:text-[#94A3B8]">
             Schedules, refill quantities, and caregiver alerts are up to date.
           </p>
         </div>
@@ -30,41 +32,49 @@ export function AttentionCards({ items }: { items: AttentionItem[] }) {
           <div
             key={item.id}
             className={cn(
-              'rounded-2xl border bg-white p-4 transition-colors',
-              isUrgent ? 'border-red-200' : 'border-amber-200',
+              'rounded-2xl border bg-[#FFFFFF] p-4 transition-colors dark:bg-[#172033]',
+              isUrgent
+                ? 'border-red-200 dark:border-red-500/35'
+                : 'border-amber-200 dark:border-amber-500/35',
             )}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-2.5 min-w-0">
                 {isUrgent ? (
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
                 ) : (
-                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                 )}
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span
                       className={cn(
                         'font-semibold',
-                        isUrgent ? 'text-red-700' : 'text-amber-700',
+                        isUrgent
+                          ? 'text-red-700 dark:text-red-400'
+                          : 'text-amber-700 dark:text-amber-400',
                       )}
                     >
                       {item.label}
                     </span>
-                    <span aria-hidden="true" className="text-slate-300">
+                    <span aria-hidden="true" className="text-[#E2E8F0] dark:text-[#334155]">
                       ·
                     </span>
-                    <span className="text-slate-500">{item.timePeriod}</span>
+                    <span className="text-[#64748B] dark:text-[#94A3B8]">{item.timePeriod}</span>
                   </div>
-                  <h4 className="mt-1 text-sm font-semibold text-slate-900">{item.title}</h4>
+                  <h4 className="mt-1 text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
+                    {item.title}
+                  </h4>
                 </div>
               </div>
             </div>
 
-            <p className="mt-2 text-xs text-slate-600 leading-relaxed">{item.trigger}</p>
+            <p className="mt-2 text-xs text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
+              {item.trigger}
+            </p>
 
             {item.supportingRecords.length > 0 && (
-              <ul className="mt-2.5 space-y-1 border-t border-slate-100 pt-2.5 text-xs text-slate-500">
+              <ul className="mt-2.5 space-y-1 border-t border-[#E2E8F0] pt-2.5 text-xs text-[#64748B] dark:border-[#334155] dark:text-[#94A3B8]">
                 {item.supportingRecords.map((rec, idx) => (
                   <li key={idx} className="truncate">
                     {rec}

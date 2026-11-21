@@ -31,7 +31,6 @@ export function DadiNaniModePage() {
     dadiNaniMode,
     setDadiNaniMode,
     addDadiNaniEntry,
-    setAssistantOpen,
   } = useMedTwin();
 
   const [entryType, setEntryType] = useState<DadiNaniEntry['entryType']>('problem');
@@ -133,17 +132,17 @@ export function DadiNaniModePage() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-amber-200 bg-amber-50/40">
+      <Card className="border-amber-200 bg-amber-50/40 dark:border-amber-500/35 dark:bg-amber-500/10">
         <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
               <HeartHandshake className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="font-display text-xl font-bold text-slate-900">
+              <h2 className="font-display text-xl font-bold text-[#172554] dark:text-[#F8FAFC]">
                 Dadi-Nani Mode — Share Medicines &amp; Problems
               </h2>
-              <p className="mt-1 text-sm text-slate-600 max-w-2xl">
+              <p className="mt-1 text-sm text-[#64748B] dark:text-[#94A3B8] max-w-2xl">
                 Warm, simple, large-print family view for elders and loved ones to review medicines,
                 share daily discomforts or questions, and coordinate comforting home routines alongside prescribed care.
               </p>
@@ -157,9 +156,6 @@ export function DadiNaniModePage() {
               onClick={() => setDadiNaniMode(!dadiNaniMode)}
             >
               {dadiNaniMode ? 'Large-Print Mode: On' : 'Enable Large-Print Mode'}
-            </Button>
-            <Button type="button" onClick={() => setAssistantOpen(true)}>
-              Ask Voice Assistant
             </Button>
           </div>
         </CardContent>
@@ -176,7 +172,7 @@ export function DadiNaniModePage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="inline-flex rounded-xl bg-slate-100 p-1">
+              <div className="inline-flex rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-1 dark:border-[#334155] dark:bg-[#0B1220]">
                 {(
                   [
                     { id: 'problem', label: 'Health Problem' },
@@ -191,8 +187,8 @@ export function DadiNaniModePage() {
                     className={cn(
                       'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                       entryType === t.id
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900',
+                        ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
+                        : 'text-[#64748B] hover:text-[#172554] dark:text-[#94A3B8] dark:hover:text-[#F8FAFC]',
                     )}
                   >
                     {t.label}
@@ -201,7 +197,7 @@ export function DadiNaniModePage() {
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-medium text-slate-700">
+                <p className="mb-2 text-xs font-medium text-[#172554] dark:text-[#F8FAFC]">
                   Common feelings or problems (optional):
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -215,8 +211,8 @@ export function DadiNaniModePage() {
                         className={cn(
                           'inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-colors cursor-pointer',
                           active
-                            ? 'border-[#0D9488] bg-[#0D9488]/10 text-[#0F766E]'
-                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                            ? 'border-[#0D9488] bg-[#CCFBF1]/70 text-[#0D9488] dark:border-[#14B8A6] dark:bg-[#14B8A6]/18 dark:text-[#14B8A6]'
+                            : 'border-[#E2E8F0] bg-[#FFFFFF] text-[#172554] hover:bg-[#F8FAFC] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC] dark:hover:bg-[#1E293B]',
                         )}
                       >
                         {active && <Check className="h-3.5 w-3.5" />}
@@ -229,7 +225,7 @@ export function DadiNaniModePage() {
 
               <div>
                 <div className="mb-1.5 flex items-center justify-between">
-                  <label htmlFor="dn-summary" className="text-xs font-medium text-slate-700">
+                  <label htmlFor="dn-summary" className="text-xs font-medium text-[#172554] dark:text-[#F8FAFC]">
                     Describe what is bothering you or what happened with a medicine
                   </label>
                   <Button
@@ -249,7 +245,7 @@ export function DadiNaniModePage() {
                   placeholder="Example: Felt mild dizziness 30 minutes after my morning tablet, so I rested and drank water."
                 />
                 {voiceError && (
-                  <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                  <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
                     <AlertCircle className="h-3.5 w-3.5" />
                     <span>{voiceError}</span>
                   </p>
@@ -257,7 +253,7 @@ export function DadiNaniModePage() {
               </div>
 
               <div>
-                <label htmlFor="dn-comfort" className="block text-xs font-medium text-slate-700 mb-1.5">
+                <label htmlFor="dn-comfort" className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1.5">
                   Home comfort routine used (kept separate from prescribed medicines)
                 </label>
                 <Input
@@ -268,13 +264,13 @@ export function DadiNaniModePage() {
                 />
               </div>
 
-              <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-700">
+              <div className="space-y-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]">
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={shareWithCareCircle}
                     onChange={(e) => setShareWithCareCircle(e.target.checked)}
-                    className="h-4 w-4 accent-[#0D9488]"
+                    className="h-4 w-4 accent-[#0D9488] dark:accent-[#14B8A6]"
                   />
                   <span>Share with consented Care Circle family members (triggers simulated notification if enabled)</span>
                 </label>
@@ -283,7 +279,7 @@ export function DadiNaniModePage() {
                     type="checkbox"
                     checked={shareWithDoctor}
                     onChange={(e) => setShareWithDoctor(e.target.checked)}
-                    className="h-4 w-4 accent-[#0D9488]"
+                    className="h-4 w-4 accent-[#0D9488] dark:accent-[#14B8A6]"
                   />
                   <span>Include in doctor’s pre-visit summary timeline</span>
                 </label>
@@ -319,14 +315,14 @@ export function DadiNaniModePage() {
               return (
                 <div
                   key={med.id}
-                  className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#334155] dark:bg-[#0B1220]"
                 >
                   <div className="space-y-1">
-                    <p className="text-base font-semibold text-slate-900">
+                    <p className="text-base font-semibold text-[#172554] dark:text-[#F8FAFC]">
                       {med.name} · {med.strength}
                     </p>
-                    <p className="text-sm text-slate-600">{med.instructions}</p>
-                    <p className="text-xs font-mono text-[#0D9488] tabular-nums">
+                    <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">{med.instructions}</p>
+                    <p className="text-xs font-mono text-[#0D9488] dark:text-[#14B8A6] tabular-nums">
                       {med.scheduledTimes.length > 0
                         ? med.scheduledTimes.map(formatTime12h).join(' · ')
                         : 'As needed (PRN)'}
@@ -362,33 +358,33 @@ export function DadiNaniModePage() {
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-500">
+            <p className="py-6 text-center text-sm text-[#64748B] dark:text-[#94A3B8]">
               No shared updates yet. Use the form above to share how you are feeling.
             </p>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
               {entries.map((entry) => (
                 <div key={entry.id} className="py-4 first:pt-0 last:pb-0 space-y-1.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                    <span className="font-semibold text-slate-800 capitalize">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
+                    <span className="font-semibold text-[#172554] dark:text-[#F8FAFC] capitalize">
                       {entry.entryType.replace('_', ' ')} · {entry.authorName}
                     </span>
                     <span className="font-mono tabular-nums">
                       {formatTimestamp(entry.createdAt)}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-800">{entry.feelingSummary}</p>
+                  <p className="text-sm text-[#172554] dark:text-[#F8FAFC]">{entry.feelingSummary}</p>
                   {entry.symptoms.length > 0 && (
-                    <p className="text-xs text-amber-800">
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
                       Reported feelings: {entry.symptoms.join(', ')}
                     </p>
                   )}
                   {entry.homeComfortNote && (
-                    <p className="text-xs text-[#0F766E]">
+                    <p className="text-xs text-[#0D9488] dark:text-[#14B8A6]">
                       Home comfort routine: {entry.homeComfortNote}
                     </p>
                   )}
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
                     Shared with:{' '}
                     {[
                       entry.sharedWithCareCircle && 'Care Circle',

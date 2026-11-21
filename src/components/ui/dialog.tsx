@@ -12,11 +12,11 @@ export const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-[1px]" />
+    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#0B1220]/55 backdrop-blur-[2px]" />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl focus:outline-none max-h-[88vh] overflow-y-auto',
+        'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 text-[#172554] shadow-xl focus:outline-none max-h-[88vh] overflow-y-auto dark:border-[#334155] dark:bg-[#172033] dark:text-[#F8FAFC]',
         className,
       )}
       {...props}
@@ -24,7 +24,7 @@ export const DialogContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close
         aria-label="Close modal"
-        className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488]"
+        className="absolute right-4 top-4 rounded-lg p-1.5 text-[#64748B] hover:bg-[#CCFBF1]/50 hover:text-[#172554] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] dark:text-[#94A3B8] dark:hover:bg-[#334155] dark:hover:text-[#F8FAFC] dark:focus-visible:ring-[#14B8A6]"
       >
         <X className="h-4 w-4" />
       </DialogPrimitive.Close>
@@ -43,7 +43,7 @@ export function DialogTitle({
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={cn('font-display text-lg font-semibold text-slate-900', className)}
+      className={cn('font-display text-lg font-semibold text-[#172554] dark:text-[#F8FAFC]', className)}
       {...props}
     />
   );
@@ -55,7 +55,7 @@ export function DialogDescription({
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>) {
   return (
     <DialogPrimitive.Description
-      className={cn('text-sm text-slate-500', className)}
+      className={cn('text-sm text-[#64748B] dark:text-[#94A3B8]', className)}
       {...props}
     />
   );

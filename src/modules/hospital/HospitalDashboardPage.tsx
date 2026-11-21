@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useMedTwin } from '@/src/context/MedTwinContext';
+import { useTheme } from '@/src/context/ThemeContext';
 import { computeRefillForecasts } from '@/src/services/adherenceEngine';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
@@ -18,6 +19,8 @@ import { formatShortDate } from '@/src/lib/utils';
 
 export function HospitalDashboardPage() {
   const { state, assignPatientDoctor, enrollPatient } = useMedTwin();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
 
   const [enrollName, setEnrollName] = useState('');
@@ -89,19 +92,19 @@ export function HospitalDashboardPage() {
       <Card>
         <CardContent className="pt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2 text-xs font-medium text-[#2563EB]">
+            <div className="flex items-center gap-2 text-xs font-medium text-[#3B82F6] dark:text-[#60A5FA]">
               <Building2 className="h-4 w-4" />
               <span>Organization: {state.hospital.code} · {state.hospital.city}</span>
             </div>
-            <h2 className="font-display text-2xl font-bold text-slate-900">
+            <h2 className="font-display text-2xl font-bold text-[#172554] dark:text-[#F8FAFC]">
               {state.hospital.name} — Operations
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
               Role-scoped operational overview. Clinical notes and full patient histories are restricted to authorized care clinicians.
             </p>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-700">
-            <ShieldCheck className="h-4 w-4 text-[#0D9488]" />
+          <div className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-2 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]">
+            <ShieldCheck className="h-4 w-4 text-[#0D9488] dark:text-[#14B8A6]" />
             <span>Organization boundary enforced</span>
           </div>
         </CardContent>
@@ -117,19 +120,19 @@ export function HospitalDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">Scoped to {state.hospital.code}</p>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Scoped to {state.hospital.code}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Assigned care teams</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-[#0D9488]">
+            <CardTitle className="text-3xl font-bold tabular-nums text-[#0D9488] dark:text-[#14B8A6]">
               {state.doctors.length}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">Active physicians on panel</p>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Active physicians on panel</p>
           </CardContent>
         </Card>
 
@@ -138,25 +141,25 @@ export function HospitalDashboardPage() {
             <CardDescription>Pending follow-ups &amp; alerts</CardDescription>
             <CardTitle className="text-3xl font-bold tabular-nums">
               {pendingFollowUpsCount}
-              <span className="ml-2 text-base font-medium text-amber-600">
+              <span className="ml-2 text-base font-medium text-amber-600 dark:text-amber-400">
                 / {outstandingAlertsCount} alerts
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">Operational coordination queue</p>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Operational coordination queue</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Patients with refill attention</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-amber-600">
+            <CardTitle className="text-3xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
               {refillAttentionCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500">Approaching supply threshold</p>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Approaching supply threshold</p>
           </CardContent>
         </Card>
       </div>
@@ -172,12 +175,20 @@ export function HospitalDashboardPage() {
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={doctorWorkload}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#475569' }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748B' }} />
-                  <Tooltip />
-                  <Bar dataKey="assignedPatients" fill="#0D9488" name="Assigned patients" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="pendingFollowUps" fill="#2563EB" name="Pending follow-ups" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#E2E8F0'} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: isDark ? '#94A3B8' : '#64748B' }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? '#172033' : '#FFFFFF',
+                      borderColor: isDark ? '#334155' : '#E2E8F0',
+                      color: isDark ? '#F8FAFC' : '#172554',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Bar dataKey="assignedPatients" fill={isDark ? '#14B8A6' : '#0D9488'} name="Assigned patients" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="pendingFollowUps" fill="#3B82F6" name="Pending follow-ups" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -187,7 +198,7 @@ export function HospitalDashboardPage() {
         <Card className="lg:col-span-5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4 text-[#0D9488]" />
+              <UserPlus className="h-4 w-4 text-[#0D9488] dark:text-[#14B8A6]" />
               <span>Enroll patient</span>
             </CardTitle>
             <CardDescription>Register a new patient and assign an authorized doctor</CardDescription>
@@ -195,7 +206,7 @@ export function HospitalDashboardPage() {
           <CardContent>
             <form onSubmit={handleEnroll} className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Patient name</label>
+                <label className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1">Patient name</label>
                 <Input
                   value={enrollName}
                   onChange={(e) => setEnrollName(e.target.value)}
@@ -205,7 +216,7 @@ export function HospitalDashboardPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Age</label>
+                  <label className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1">Age</label>
                   <Input
                     type="number"
                     min={1}
@@ -215,11 +226,11 @@ export function HospitalDashboardPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Gender</label>
+                  <label className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1">Gender</label>
                   <select
                     value={enrollGender}
                     onChange={(e) => setEnrollGender(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs"
+                    className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-3 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]"
                   >
                     <option value="Female">Female</option>
                     <option value="Male">Male</option>
@@ -228,11 +239,11 @@ export function HospitalDashboardPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Assign doctor</label>
+                <label className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1">Assign doctor</label>
                 <select
                   value={enrollDoctorId}
                   onChange={(e) => setEnrollDoctorId(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs"
+                  className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-3 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]"
                 >
                   {state.doctors.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -242,7 +253,7 @@ export function HospitalDashboardPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1">
                   Operational intake tags (optional)
                 </label>
                 <Input
@@ -269,7 +280,7 @@ export function HospitalDashboardPage() {
             </CardDescription>
           </div>
           <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B] dark:text-[#94A3B8]" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -283,7 +294,7 @@ export function HospitalDashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-500">
+                <tr className="border-b border-[#E2E8F0] text-[#64748B] dark:border-[#334155] dark:text-[#94A3B8]">
                   <th className="py-2.5 pr-3 font-medium">Patient</th>
                   <th className="py-2.5 px-3 font-medium">MRN</th>
                   <th className="py-2.5 px-3 font-medium">Refill status</th>
@@ -291,25 +302,25 @@ export function HospitalDashboardPage() {
                   <th className="py-2.5 pl-3 font-medium">Assigned doctor</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
                 {filteredPatients.map((p) => {
                   const needsRefill = computeRefillForecasts(p.id, state.medications).some(
                     (r) => r.needsRefill,
                   );
                   return (
-                    <tr key={p.id} className="hover:bg-slate-50">
-                      <td className="py-3 pr-3 font-semibold text-slate-900 whitespace-nowrap">
+                    <tr key={p.id} className="hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B]">
+                      <td className="py-3 pr-3 font-semibold text-[#172554] dark:text-[#F8FAFC] whitespace-nowrap">
                         {p.name}
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-500 tabular-nums whitespace-nowrap">
+                      <td className="py-3 px-3 font-mono text-[#64748B] dark:text-[#94A3B8] tabular-nums whitespace-nowrap">
                         {p.mrn}
                       </td>
                       <td className="py-3 px-3 whitespace-nowrap">
-                        <span className={needsRefill ? 'font-semibold text-amber-700' : 'text-slate-600'}>
+                        <span className={needsRefill ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-[#64748B] dark:text-[#94A3B8]'}>
                           {needsRefill ? 'Refill attention' : 'Nominal'}
                         </span>
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-500 tabular-nums whitespace-nowrap">
+                      <td className="py-3 px-3 font-mono text-[#64748B] dark:text-[#94A3B8] tabular-nums whitespace-nowrap">
                         {p.nextFollowUpDate ? formatShortDate(p.nextFollowUpDate) : 'Unscheduled'}
                       </td>
                       <td className="py-3 pl-3">
@@ -317,7 +328,7 @@ export function HospitalDashboardPage() {
                           aria-label={`Assign doctor for ${p.name}`}
                           value={p.assignedDoctorId}
                           onChange={(e) => assignPatientDoctor(p.id, e.target.value)}
-                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800"
+                          className="rounded-lg border border-[#E2E8F0] bg-[#FFFFFF] px-2.5 py-1.5 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]"
                         >
                           {state.doctors.map((d) => (
                             <option key={d.id} value={d.id}>

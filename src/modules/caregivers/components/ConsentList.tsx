@@ -73,8 +73,8 @@ export function ConsentList({
               className={cn(
                 'rounded-xl px-3 py-1.5 text-xs font-medium capitalize transition-colors cursor-pointer',
                 statusFilter === tab
-                  ? 'bg-[#142D4E] text-white'
-                  : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                  ? 'bg-[#0D9488] text-white dark:bg-[#14B8A6] dark:text-[#0B1220]'
+                  : 'border border-[#E2E8F0] bg-[#FFFFFF] text-[#64748B] hover:bg-[#F8FAFC] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#94A3B8] dark:hover:bg-[#1E293B]',
               )}
             >
               {tab} ({counts[tab]})
@@ -83,7 +83,7 @@ export function ConsentList({
         </div>
 
         <div className="relative w-full sm:w-56">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#64748B] dark:text-[#94A3B8]" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -95,9 +95,9 @@ export function ConsentList({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-slate-200 bg-white/60 py-10 px-4 text-center">
-          <ShieldCheck className="h-8 w-8 text-slate-300 mb-2" />
-          <p className="text-sm text-slate-500">{emptyMessage}</p>
+        <div className="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-[#E2E8F0] bg-[#F8FAFC] py-10 px-4 text-center dark:border-[#334155] dark:bg-[#0B1220]">
+          <ShieldCheck className="h-8 w-8 text-[#CBD5E1] dark:text-[#475569] mb-2" />
+          <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">{emptyMessage}</p>
         </div>
       ) : (
         <div className="space-y-3">

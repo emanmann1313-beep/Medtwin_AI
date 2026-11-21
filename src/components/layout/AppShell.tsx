@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   Activity,
-  Bot,
   Building2,
   CalendarClock,
   ChevronLeft,
@@ -13,18 +12,21 @@ import {
   History,
   LayoutDashboard,
   Menu,
+  Moon,
   Pill,
   RotateCcw,
   ShieldCheck,
   Stethoscope,
+  Sun,
   Users,
   X,
 } from 'lucide-react';
 import { DEMO_ACCOUNTS } from '@/src/data/seedData';
 import { useMedTwin } from '@/src/context/MedTwinContext';
+import { useTheme } from '@/src/context/ThemeContext';
 import { WorkspaceRole } from '@/src/types/medtwin';
+import { MedTwinLogo } from '@/src/components/shared/MedTwinLogo';
 import { cn } from '@/src/lib/utils';
-import { CareAssistantDrawer } from '@/src/modules/assistant/CareAssistantDrawer';
 
 interface NavItem {
   to: string;
@@ -34,7 +36,7 @@ interface NavItem {
 
 const NAV_BY_ROLE: Record<WorkspaceRole, NavItem[]> = {
   patient: [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/prescriptions', label: 'Scan Prescription', icon: FileScan },
     { to: '/medications', label: 'Medications', icon: Pill },
     { to: '/digital-twin', label: 'Digital Twin', icon: Activity },
@@ -61,7 +63,7 @@ const NAV_BY_ROLE: Record<WorkspaceRole, NavItem[]> = {
 };
 
 const DEFAULT_ROUTE_FOR_ROLE: Record<WorkspaceRole, string> = {
-  patient: '/',
+  patient: '/dashboard',
   caregiver: '/caregiver',
   doctor: '/doctor',
   hospital_admin: '/hospital',
@@ -82,10 +84,10 @@ export function AppShell({
     activePatient,
     dadiNaniMode,
     setDadiNaniMode,
-    setAssistantOpen,
     switchDemoAccount,
     resetDemo,
   } = useMedTwin();
+  const { theme, toggleTheme } = useTheme();
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -103,26 +105,26 @@ export function AppShell({
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-[#142D4E] text-slate-100">
-      <div className="flex items-center justify-between px-4 py-5 border-b border-white/10">
+    <div className="flex h-full flex-col border-r border-[#E2E8F0] bg-[#FFFFFF] text-[#172554] dark:border-[#334155] dark:bg-[#172033] dark:text-[#F8FAFC] transition-colors duration-200">
+      <div className="flex items-center justify-between px-4 py-5 border-b border-[#E2E8F0] dark:border-[#334155]">
         {!collapsed ? (
-          <div className="min-w-0">
-            <span className="font-display text-lg font-bold tracking-tight text-white whitespace-nowrap">
-              MedTwin AI
-            </span>
-            <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+          <Link to="/" className="min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] rounded-md">
+            <MedTwinLogo />
+            <p className="mt-1 text-[11px] text-[#64748B] dark:text-[#94A3B8] truncate">
               Connected medication care
             </p>
-          </div>
+          </Link>
         ) : (
-          <span className="mx-auto font-display text-base font-bold text-white">MT</span>
+          <Link to="/" aria-label="MedTwin AI Home" className="mx-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] rounded-md">
+            <MedTwinLogo showWordmark={false} size={24} />
+          </Link>
         )}
 
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden lg:inline-flex rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white cursor-pointer"
+          className="hidden lg:inline-flex rounded-lg p-1.5 text-[#64748B] hover:bg-[#CCFBF1]/50 hover:text-[#172554] dark:text-[#94A3B8] dark:hover:bg-[#334155]/60 dark:hover:text-[#F8FAFC] cursor-pointer"
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
@@ -131,7 +133,7 @@ export function AppShell({
           type="button"
           onClick={() => setMobileNavOpen(false)}
           aria-label="Close navigation menu"
-          className="lg:hidden rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+          className="lg:hidden rounded-lg p-1.5 text-[#64748B] hover:bg-[#CCFBF1]/50 hover:text-[#172554] dark:text-[#94A3B8] dark:hover:bg-[#334155]/60 dark:hover:text-[#F8FAFC]"
         >
           <X className="h-5 w-5" />
         </button>
@@ -139,21 +141,21 @@ export function AppShell({
 
       {/* Explore Demo Switcher — explicitly separate from real auth */}
       {!collapsed && (
-        <div className="px-4 py-4 border-b border-white/10">
+        <div className="px-4 py-4 border-b border-[#E2E8F0] dark:border-[#334155]">
           <div className="flex items-center justify-between mb-1.5">
             <label
               htmlFor="demo-role-switcher"
-              className="text-[11px] font-semibold tracking-wide text-teal-300"
+              className="text-[11px] font-semibold tracking-wide text-[#0D9488] dark:text-[#14B8A6]"
             >
               Explore demo
             </label>
-            <span className="text-[10px] text-slate-400">Synthetic data</span>
+            <span className="text-[10px] text-[#64748B] dark:text-[#94A3B8]">Synthetic data</span>
           </div>
           <select
             id="demo-role-switcher"
             value={activeDemoAccount.id}
             onChange={(e) => handleRoleSwitch(e.target.value)}
-            className="w-full rounded-xl border border-white/15 bg-[#1B3B64] px-3 py-2 text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
+            className="w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-xs font-medium text-[#172554] focus:outline-none focus:ring-2 focus:ring-[#0D9488] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC] dark:focus:ring-[#14B8A6]"
           >
             {DEMO_ACCOUNTS.map((acc) => (
               <option key={acc.id} value={acc.id}>
@@ -161,7 +163,7 @@ export function AppShell({
               </option>
             ))}
           </select>
-          <p className="mt-1.5 text-[11px] text-slate-400 leading-snug">
+          <p className="mt-1.5 text-[11px] text-[#64748B] dark:text-[#94A3B8] leading-snug">
             {activeDemoAccount.subtitle}
           </p>
         </div>
@@ -174,14 +176,19 @@ export function AppShell({
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/' || item.to === '/caregiver' || item.to === '/doctor' || item.to === '/hospital'}
+              end={
+                item.to === '/dashboard' ||
+                item.to === '/caregiver' ||
+                item.to === '/doctor' ||
+                item.to === '/hospital'
+              }
               onClick={() => setMobileNavOpen(false)}
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap',
                   isActive
-                    ? 'bg-[#14B8A6] text-[#142D4E] font-semibold shadow-sm'
-                    : 'text-slate-200/90 hover:bg-white/10 hover:text-white',
+                    ? 'bg-[#CCFBF1] text-[#0D9488] font-semibold dark:bg-[#14B8A6]/20 dark:text-[#14B8A6]'
+                    : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#172554] dark:text-[#94A3B8] dark:hover:bg-[#0B1220]/60 dark:hover:text-[#F8FAFC]',
                   collapsed && 'justify-center px-2',
                 )
               }
@@ -194,17 +201,20 @@ export function AppShell({
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-3 space-y-2">
+      <div className="border-t border-[#E2E8F0] p-3 space-y-2 dark:border-[#334155]">
         {!collapsed && (
-          <div className="px-2 py-1 text-[11px] text-slate-400">
-            Active account: <span className="text-slate-200 font-medium">{activeDemoAccount.actorName}</span>
+          <div className="px-2 py-1 text-[11px] text-[#64748B] dark:text-[#94A3B8]">
+            Active account:{' '}
+            <span className="text-[#172554] dark:text-[#F8FAFC] font-medium">
+              {activeDemoAccount.actorName}
+            </span>
           </div>
         )}
         <button
           type="button"
           onClick={resetDemo}
           className={cn(
-            'flex w-full items-center gap-2.5 rounded-xl border border-white/15 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 transition-colors cursor-pointer',
+            'flex w-full items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-3 py-2 text-xs font-medium text-[#172554] hover:bg-[#CCFBF1]/45 transition-colors cursor-pointer dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC] dark:hover:bg-[#334155]/60',
             collapsed && 'justify-center px-2',
           )}
           title="Reset synthetic demo data"
@@ -219,7 +229,7 @@ export function AppShell({
   return (
     <div
       className={cn(
-        'min-h-screen flex bg-[#F8FAFC] bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.06),transparent_48%),radial-gradient(ellipse_at_bottom_left,rgba(167,139,250,0.06),transparent_45%)] text-[#1E293B]',
+        'min-h-screen flex bg-[#F8FAFC] text-[#172554] dark:bg-[#0B1220] dark:text-[#F8FAFC] transition-colors duration-200',
         dadiNaniMode && 'text-[16px]',
       )}
     >
@@ -237,7 +247,7 @@ export function AppShell({
       {mobileNavOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <div
-            className="fixed inset-0 bg-slate-950/50"
+            className="fixed inset-0 bg-[#0B1220]/55"
             onClick={() => setMobileNavOpen(false)}
           />
           <div className="relative z-10 w-72 max-w-[85vw] h-full">{sidebarContent}</div>
@@ -246,22 +256,22 @@ export function AppShell({
 
       {/* Main Content Area */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-slate-200/80 bg-white/95 backdrop-blur px-4 py-3.5 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-[#E2E8F0] bg-[#FFFFFF]/95 backdrop-blur px-4 py-3.5 sm:px-6 lg:px-8 dark:border-[#334155] dark:bg-[#172033]/95 transition-colors duration-200">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open navigation menu"
-              className="lg:hidden rounded-xl border border-slate-200 p-2 text-slate-700 hover:bg-slate-50"
+              className="lg:hidden rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] p-2 text-[#172554] hover:bg-[#CCFBF1]/45 dark:border-[#334155] dark:bg-[#172033] dark:text-[#F8FAFC] dark:hover:bg-[#334155]/60"
             >
               <Menu className="h-5 w-5" />
             </button>
             <div className="min-w-0">
-              <h1 className="font-display text-lg sm:text-xl font-bold tracking-tight text-slate-900 truncate">
+              <h1 className="font-display text-lg sm:text-xl font-bold tracking-tight text-[#172554] dark:text-[#F8FAFC] truncate">
                 {title}
               </h1>
               {subtitle && (
-                <p className="text-xs text-slate-500 truncate">
+                <p className="text-xs text-[#64748B] dark:text-[#94A3B8] truncate">
                   {subtitle}
                 </p>
               )}
@@ -280,33 +290,46 @@ export function AppShell({
                 className={cn(
                   'hidden sm:inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer',
                   dadiNaniMode
-                    ? 'border-amber-300 bg-amber-50 text-amber-900'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                    ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200'
+                    : 'border-[#E2E8F0] bg-[#FFFFFF] text-[#172554] hover:bg-[#CCFBF1]/45 dark:border-[#334155] dark:bg-[#172033] dark:text-[#F8FAFC] dark:hover:bg-[#334155]/60',
                 )}
               >
-                <HeartHandshake className="h-4 w-4 text-amber-600" />
+                <HeartHandshake className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 <span>Dadi-Nani Mode{dadiNaniMode ? ' · On' : ''}</span>
               </button>
             )}
 
+            {/* Light Mode / Dark Mode Toggle */}
             <button
               type="button"
-              onClick={() => setAssistantOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#142D4E] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#1B3B64] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-pressed={theme === 'dark'}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-3 py-2 text-xs font-semibold text-[#172554] hover:bg-[#CCFBF1]/55 transition-colors whitespace-nowrap shrink-0 cursor-pointer dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC] dark:hover:bg-[#334155]/60"
             >
-              <Bot className="h-4 w-4 text-[#14B8A6]" />
-              <span>Voice &amp; Chat Bot</span>
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="h-4 w-4 text-[#14B8A6]" />
+                  <span className="hidden sm:inline">Light mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="h-4 w-4 text-[#0D9488]" />
+                  <span className="hidden sm:inline">Dark mode</span>
+                </>
+              )}
             </button>
           </div>
         </header>
 
-        {/* Subtle Tagline / Active Context Strip on Mobile Role Switch */}
-        <div className="border-b border-slate-200/60 bg-white/60 px-4 py-2 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-          <span>
-            Your medicines. Your care team. One connected view.
-          </span>
-          <span className="font-mono text-[11px] text-slate-500 tabular-nums">
-            Demo context: {activeRole === 'doctor' || activeRole === 'hospital_admin' ? activeDemoAccount.actorName : `${activePatient.name} (${activePatient.mrn})`}
+        {/* Subtle Tagline / Active Context Strip */}
+        <div className="border-b border-[#E2E8F0] bg-[#FFFFFF]/70 px-4 py-2 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-2 text-xs text-[#64748B] dark:border-[#334155] dark:bg-[#172033]/50 dark:text-[#94A3B8]">
+          <span>Your medicines. Your care team. One connected view.</span>
+          <span className="font-mono text-[11px] text-[#64748B] dark:text-[#94A3B8] tabular-nums">
+            Demo context:{' '}
+            {activeRole === 'doctor' || activeRole === 'hospital_admin'
+              ? activeDemoAccount.actorName
+              : `${activePatient.name} (${activePatient.mrn})`}
           </span>
         </div>
 
@@ -314,8 +337,6 @@ export function AppShell({
           {children}
         </main>
       </div>
-
-      <CareAssistantDrawer />
     </div>
   );
 }
