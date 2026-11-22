@@ -159,7 +159,7 @@ interface MedTwinContextValue {
 const MedTwinContext = createContext<MedTwinContextValue | null>(null);
 
 export function MedTwinProvider({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isDemoMode } = useAuth();
   const { pushToast } = useToast();
 
   const [demoState, setDemoState] = useState<MedTwinState>(() => demoMedTwinService.loadState());
@@ -194,7 +194,9 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const isRealAccountMode = Boolean(isAuthenticated && user);
+  const isRealAccountMode = Boolean(
+  isAuthenticated && user && !isDemoMode
+);
 
   const applyScopedPayload = useCallback((payload: ScopedWorkspacePayload) => {
     setAuthWorkspace((prev) => {
@@ -212,7 +214,7 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshWorkspace = useCallback(async () => {
-    if (!isAuthenticated || !user) return;
+    if (isDemoMode || !isAuthenticated || !user) return;
     setIsLoading(true);
     try {
       const payload = await fetchScopedWorkspaceApi();
@@ -226,20 +228,21 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [applyScopedPayload, isAuthenticated, pushToast, user]);
+  }, [applyScopedPayload, isAuthenticated, isDemoMode, pushToast, user]);
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      setDadiNaniLanguage(user.preferredLanguage || 'en');
-      refreshWorkspace();
-    } else {
-      setAuthWorkspace(null);
-      setDoctorAuthorizations([]);
-      setDirectory([]);
-      const timer = window.setTimeout(() => setIsLoading(false), 120);
-      return () => window.clearTimeout(timer);
-    }
-  }, [isAuthenticated, refreshWorkspace, user]);
+  
+useEffect(() => {
+  if (isAuthenticated && user && !isDemoMode) {
+    setDadiNaniLanguage(user.preferredLanguage || 'en');
+    refreshWorkspace();
+  } else {
+    setAuthWorkspace(null);
+    setDoctorAuthorizations([]);
+    setDirectory([]);
+    const timer = window.setTimeout(() => setIsLoading(false), 120);
+    return () => window.clearTimeout(timer);
+  }
+}, [isAuthenticated, isDemoMode, refreshWorkspace, user]);
 
   const state = useMemo(() => {
     if (isRealAccountMode && user) {

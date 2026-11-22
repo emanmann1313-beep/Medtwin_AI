@@ -63,25 +63,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabaseConfigured, setSupabaseConfigured] = useState(false);
   const [lastEmailVerificationToken, setLastEmailVerificationToken] = useState<string | null>(null);
 
-  const refreshSession = useCallback(async () => {
-    try {
-      const res = await fetchSessionApi();
-      setUser(res.user);
-      setSupabaseConfigured(res.supabaseConfigured);
-      if (res.user) {
-        setIsDemoMode(false);
-        try {
-          window.sessionStorage.removeItem(DEMO_MODE_STORAGE_KEY);
-        } catch {
-          // ignore
-        }
+  
+const refreshSession = useCallback(async () => {
+  const demoModeRequested = readInitialDemoFlag();
+
+  try {
+    const res = await fetchSessionApi();
+    setUser(res.user);
+    setSupabaseConfigured(res.supabaseConfigured);
+
+    if (demoModeRequested) {
+      setIsDemoMode(true);
+    } else if (res.user) {
+      setIsDemoMode(false);
+      try {
+        window.sessionStorage.removeItem(DEMO_MODE_STORAGE_KEY);
+      } catch {
+        // ignore
       }
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  } catch {
+    setUser(null);
+  } finally {
+    setIsLoading(false);
+  }
+
+}, []);
 
   useEffect(() => {
     refreshSession();
@@ -128,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateProfile = useCallback(async (updates: Partial<AuthUser>) => {
+
     const res = await updateProfileApi(updates);
     setUser(res.user);
     return res.user;
