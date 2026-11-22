@@ -12,6 +12,9 @@ and keeps caregivers, doctors and hospitals connected, always with the patient's
 
 ---
 
+<img width="1902" height="867" alt="image" src="https://github.com/user-attachments/assets/a4ba8d74-5fb2-458c-9ce3-a94bfa16a1b7" />
+
+
 ## Why MedTwin?
 
 Most medication apps only send reminders. Real patients, especially older adults, take medicines from
