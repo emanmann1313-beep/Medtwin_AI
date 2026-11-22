@@ -188,7 +188,7 @@ function supabaseRestHeaders(): Record<string, string> {
 }
 
 function supabaseBaseUrl(): string {
-  // Accept "https://xxxx.supabase.co" but also forgive a pasted ".../rest/v1/" suffix
+  // Accept "https://xxxx.supabase.co" and also forgive a pasted ".../rest/v1/" suffix
   return (process.env.SUPABASE_URL || '').trim().replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 }
 

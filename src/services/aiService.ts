@@ -42,6 +42,7 @@ export async function sendAiChatMessage(payload: {
   patientContext?: Record<string, unknown>;
   dadiNaniMode?: boolean;
   role?: string;
+  language?: 'en' | 'hi' | 'pa';
 }): Promise<string> {
   const res = await fetch('/api/ai/chat', {
     method: 'POST',

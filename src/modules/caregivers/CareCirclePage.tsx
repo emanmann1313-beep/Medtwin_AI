@@ -1,12 +1,27 @@
 import React, { useMemo, useState } from 'react';
-import { BellRing, ShieldCheck, UserPlus, UserX } from 'lucide-react';
+import { BellRing, ShieldCheck, Stethoscope, UserPlus, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useMedTwin } from '@/src/context/MedTwinContext';
-import { RelationshipLabel } from '@/src/types/medtwin';
+import { CaregiverConnection, RelationshipLabel } from '@/src/types/medtwin';
+import {
+  CONSENT_SCOPE_LIST,
+  CaregiverConsentRecord,
+  ConsentScope,
+} from '@/src/types/caregiverContracts';
+import {
+  USE_MOCKS,
+  mapAlertToContractRecord,
+  mapConnectionToConsentRecord,
+  toggleScopeInPermissions,
+} from '@/src/services/caregiverAdapter';
+import { ConsentList } from '@/src/modules/caregivers/components/ConsentList';
+import { CaregiverContactsSection } from '@/src/modules/caregivers/components/CaregiverContactsSection';
+import { AlertHistoryPanel } from '@/src/modules/caregivers/components/AlertHistoryPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
-import { Switch } from '@/src/components/ui/switch';
-import { cn, formatShortDate } from '@/src/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
+import { formatShortDate, formatTimestamp } from '@/src/lib/utils';
 
 const RELATIONSHIPS: RelationshipLabel[] = [
   'Parent',
@@ -21,10 +36,17 @@ const RELATIONSHIPS: RelationshipLabel[] = [
 export function CareCirclePage() {
   const {
     state,
+    isRealAccountMode,
+    hasPatients,
+    activeRole,
     activePatient,
+    doctorAuthorizations,
+    directory,
     inviteCaregiver,
     respondCaregiverInvite,
     updateCaregiverPermissions,
+    authorizeDoctorByEmail,
+    respondDoctorAuthorization,
     addFamilyMedicalHistory,
     createSimulatedAlert,
   } = useMedTwin();
@@ -38,28 +60,62 @@ export function CareCirclePage() {
   const [permHistory, setPermHistory] = useState(false);
   const [permNotes, setPermNotes] = useState(false);
 
+  const [doctorEmail, setDoctorEmail] = useState('');
+  const [doctorSubmitting, setDoctorSubmitting] = useState(false);
+
   const [fmhRel, setFmhRel] = useState<RelationshipLabel>('Parent');
   const [fmhCond, setFmhCond] = useState('');
   const [fmhSource, setFmhSource] = useState('Patient intake self-report');
 
-  const connections = useMemo(
-    () => state.connections.filter((c) => c.patientId === activePatient.id),
-    [activePatient.id, state.connections],
+  const isPatientPerspective = activeRole === 'patient';
+
+  const connections = useMemo(() => {
+    if (!hasPatients || !activePatient.id) return [];
+    return state.connections.filter((c) => c.patientId === activePatient.id);
+  }, [activePatient.id, hasPatients, state.connections]);
+
+  const connectionsById = useMemo(() => {
+    const map: Record<string, CaregiverConnection> = {};
+    for (const c of connections) {
+      map[c.id] = c;
+    }
+    return map;
+  }, [connections]);
+
+  const consentRecords: CaregiverConsentRecord[] = useMemo(
+    () => connections.map((c) => mapConnectionToConsentRecord(c, state.patients)),
+    [connections, state.patients],
   );
 
   const familyHistory = useMemo(
-    () => state.familyMedicalHistory.filter((f) => f.patientId === activePatient.id),
-    [activePatient.id, state.familyMedicalHistory],
+    () =>
+      hasPatients && activePatient.id
+        ? state.familyMedicalHistory.filter((f) => f.patientId === activePatient.id)
+        : [],
+    [activePatient.id, hasPatients, state.familyMedicalHistory],
+  );
+
+  const rawPatientAlerts = useMemo(
+    () =>
+      hasPatients && activePatient.id
+        ? state.alerts.filter((a) => a.patientId === activePatient.id)
+        : [],
+    [activePatient.id, hasPatients, state.alerts],
   );
 
   const patientAlerts = useMemo(
-    () => state.alerts.filter((a) => a.patientId === activePatient.id),
-    [activePatient.id, state.alerts],
+    () => rawPatientAlerts.map((a) => mapAlertToContractRecord(a, state.patients)),
+    [rawPatientAlerts, state.patients],
+  );
+
+  const registeredDoctors = useMemo(
+    () => directory.filter((d) => d.role === 'doctor'),
+    [directory],
   );
 
   const handleInviteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteName.trim() || !inviteEmail.trim()) return;
+    if (!activePatient.id || !inviteName.trim() || !inviteEmail.trim()) return;
     inviteCaregiver({
       patientId: activePatient.id,
       caregiverName: inviteName.trim(),
@@ -77,9 +133,23 @@ export function CareCirclePage() {
     setInviteEmail('');
   };
 
+  const handleAuthorizeDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!doctorEmail.trim()) return;
+    setDoctorSubmitting(true);
+    try {
+      await authorizeDoctorByEmail(doctorEmail.trim());
+      setDoctorEmail('');
+    } catch {
+      // Toast handled in context
+    } finally {
+      setDoctorSubmitting(false);
+    }
+  };
+
   const handleAddFamilyHistory = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fmhCond.trim() || !fmhSource.trim()) return;
+    if (!activePatient.id || !fmhCond.trim() || !fmhSource.trim()) return;
     addFamilyMedicalHistory({
       patientId: activePatient.id,
       relationship: fmhRel,
@@ -89,204 +159,263 @@ export function CareCirclePage() {
     setFmhCond('');
   };
 
+  const handleToggleScope = (consentId: string, scope: ConsentScope) => {
+    const conn = connectionsById[consentId];
+    if (!conn) return;
+    updateCaregiverPermissions(
+      consentId,
+      toggleScopeInPermissions(conn.permissions, scope),
+      conn.alertPreferences,
+    );
+  };
+
+  const handleUpdateThreshold = (consentId: string, threshold: number) => {
+    const conn = connectionsById[consentId];
+    if (!conn) return;
+    updateCaregiverPermissions(consentId, conn.permissions, {
+      ...conn.alertPreferences,
+      repeatedMissedThreshold: threshold,
+    });
+  };
+
+  if (!hasPatients || !activePatient.id) {
+    return (
+      <Card>
+        <CardContent className="py-12 px-6 text-center space-y-3">
+          <Users className="mx-auto h-9 w-9 text-[#8B5CF6]" />
+          <h3 className="font-display text-lg font-semibold text-[#F8FAFC]">
+            No approved patient Care Circle yet
+          </h3>
+          <p className="mx-auto max-w-md text-xs text-[#A8B8CC]">
+            Send a connection request from the Caregiver Hub or ask your family member to invite you from their Care Circle.
+          </p>
+          <div>
+            <Link to="/caregiver">
+              <Button variant="outline" size="sm">
+                Go to Caregiver Hub
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="pt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-medium text-[#0D9488]">
+      <Card className="border-[#334155] bg-[#1A2740]">
+        <CardContent className="pt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#2DD4BF]">
               <ShieldCheck className="h-4 w-4" />
-              <span>Explicit Consent-Based Access</span>
+              <span>Explicit Consent-Based Access · 4 Scopes</span>
+              {!isRealAccountMode && USE_MOCKS && (
+                <span className="rounded-lg border border-[#FBBF24]/30 bg-[#FBBF24]/15 px-2 py-0.5 text-[11px] font-medium text-[#FBBF24]">
+                  Interactive Demo · Simulated Alerts
+                </span>
+              )}
             </div>
-            <h2 className="font-display text-2xl font-bold text-slate-900">
+            <h2 className="font-display text-2xl font-bold text-[#F8FAFC]">
               Care Circle — {activePatient.name}
             </h2>
-            <p className="text-sm text-slate-600">
-              Family relationships never grant automatic access. Every permission and alert preference is controlled per caregiver below.
+            <p className="text-sm text-[#A8B8CC]">
+              Family relationships never grant automatic access. Toggle the 4 consent scopes or revoke caregiver and doctor access at any time.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="amber"
-            onClick={() =>
-              createSimulatedAlert({
-                patientId: activePatient.id,
-                title: `Manual Care Circle check-in alert for ${activePatient.name}`,
-                reason: 'Patient-triggered simulated check-in notification to consented caregivers.',
-                severity: 'attention',
-              })
-            }
-          >
-            <BellRing className="h-4 w-4" />
-            <span>Send simulated test alert</span>
-          </Button>
+          {!isRealAccountMode && (
+            <Button
+              type="button"
+              variant="amber"
+              onClick={() =>
+                createSimulatedAlert({
+                  patientId: activePatient.id,
+                  title: `Manual Care Circle check-in alert for ${activePatient.name}`,
+                  reason: 'Patient-triggered simulated check-in notification to consented caregivers.',
+                  severity: 'attention',
+                })
+              }
+            >
+              <BellRing className="h-4 w-4" />
+              <span>Send simulated test alert</span>
+            </Button>
+          )}
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Connected Caregivers & Granular Permissions */}
-        <div className="lg:col-span-7 space-y-4">
+      <Tabs defaultValue="contacts">
+        <TabsList>
+          <TabsTrigger value="contacts">
+            Caregiver Contacts ({connections.length})
+          </TabsTrigger>
+          <TabsTrigger value="consent">
+            Consent Scopes &amp; Access
+          </TabsTrigger>
+          <TabsTrigger value="alert-history">
+            Alert History ({rawPatientAlerts.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="contacts">
+          <CaregiverContactsSection
+            patient={activePatient}
+            canManageContacts={isPatientPerspective}
+          />
+        </TabsContent>
+
+        <TabsContent value="alert-history">
           <Card>
             <CardHeader>
-              <CardTitle>Caregiver connections ({connections.length})</CardTitle>
+              <CardTitle className="text-[#F8FAFC]">
+                Caregiver Alert History
+              </CardTitle>
               <CardDescription>
-                Manage primary/secondary contacts, invitation status, and granular permissions
+                Chronological audit log of caregiver invitations, missed-dose alerts, refill notifications, and WhatsApp/SMS launches
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {connections.length === 0 ? (
-                <p className="py-6 text-center text-sm text-slate-500">
-                  No Care Circle contacts invited yet.
-                </p>
-              ) : (
-                connections.map((conn) => (
-                  <div
-                    key={conn.id}
-                    className="rounded-2xl border border-slate-200 p-4 space-y-4"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-sm font-semibold text-slate-900">
-                            {conn.caregiverName}
-                          </h4>
-                          <span className="text-xs text-slate-500">
-                            · {conn.relationship} · {conn.contactPriority} contact
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Invited {formatShortDate(conn.invitedAt)} · Status:{' '}
-                          <span
-                            className={cn(
-                              'font-semibold capitalize',
-                              conn.status === 'accepted'
-                                ? 'text-[#0D9488]'
-                                : conn.status === 'invited'
-                                  ? 'text-amber-700'
-                                  : 'text-red-600',
-                            )}
-                          >
-                            {conn.status}
-                          </span>
-                        </p>
-                      </div>
+            <CardContent>
+              <AlertHistoryPanel alerts={rawPatientAlerts} patients={state.patients} />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-                      <div className="flex items-center gap-2">
-                        {conn.status === 'invited' && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => respondCaregiverInvite(conn.id, 'accepted')}
-                          >
-                            Simulate accept
-                          </Button>
-                        )}
-                        {conn.status !== 'revoked' ? (
+        <TabsContent value="consent">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Left Column: Caregiver Connections & Doctor Access */}
+            <div className="lg:col-span-7 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-[#F8FAFC]">
+                Caregiver connections &amp; consent ({consentRecords.length})
+              </CardTitle>
+              <CardDescription>
+                Approve pending family requests, manage contact priority, 4 consent scopes, and missed-dose alert thresholds.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ConsentList
+                consents={consentRecords}
+                connectionsById={connectionsById}
+                perspective={isPatientPerspective ? 'patient' : 'caregiver'}
+                editable={isPatientPerspective}
+                emptyMessage="No Care Circle contacts invited or connected yet."
+                onAcceptInvite={(id) => respondCaregiverInvite(id, 'accepted')}
+                onRevokeConsent={(id) => respondCaregiverInvite(id, 'revoked')}
+                onRestoreConsent={(id) => respondCaregiverInvite(id, 'accepted')}
+                onToggleScope={(id, scope) => handleToggleScope(id, scope)}
+                onUpdateThreshold={handleUpdateThreshold}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Authorized Doctors Card (Real Patient Accounts) */}
+          {isRealAccountMode && isPatientPerspective && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-[#F8FAFC]">
+                  <Stethoscope className="h-4 w-4 text-[#8B5CF6]" />
+                  <span>Authorized doctors ({doctorAuthorizations.filter((d) => d.status === 'authorized').length})</span>
+                </CardTitle>
+                <CardDescription>
+                  Doctors only view your medications, adherence, and reports when you explicitly authorize them.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <form onSubmit={handleAuthorizeDoctor} className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    type="email"
+                    list="medtwin-registered-doctors"
+                    value={doctorEmail}
+                    onChange={(e) => setDoctorEmail(e.target.value)}
+                    placeholder="Enter doctor's registered email..."
+                    aria-label="Doctor email to authorize"
+                    required
+                  />
+                  <datalist id="medtwin-registered-doctors">
+                    {registeredDoctors.map((doc) => (
+                      <option key={doc.id} value={doc.email}>
+                        {doc.fullName} {doc.specialty ? `(${doc.specialty})` : ''}
+                      </option>
+                    ))}
+                  </datalist>
+                  <Button type="submit" disabled={doctorSubmitting} className="shrink-0 whitespace-nowrap">
+                    {doctorSubmitting ? 'Authorizing...' : 'Authorize doctor'}
+                  </Button>
+                </form>
+
+                {doctorAuthorizations.length === 0 ? (
+                  <p className="text-xs text-[#A8B8CC]">
+                    No clinicians have been authorized yet.
+                  </p>
+                ) : (
+                  <div className="divide-y divide-[#334155]">
+                    {doctorAuthorizations.map((auth) => (
+                      <div
+                        key={auth.id}
+                        className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-1 last:pb-1 text-xs"
+                      >
+                        <div>
+                          <p className="font-semibold text-[#F8FAFC]">
+                            {auth.doctorName}
+                            {auth.doctorSpecialty ? ` · ${auth.doctorSpecialty}` : ''}
+                          </p>
+                          <p className="text-[#A8B8CC] capitalize">
+                            Status: {auth.status} · Updated {formatTimestamp(auth.updatedAt)}
+                          </p>
+                        </div>
+                        {auth.status === 'authorized' ? (
                           <Button
                             type="button"
                             size="sm"
                             variant="outline"
-                            onClick={() => respondCaregiverInvite(conn.id, 'revoked')}
+                            onClick={() => void respondDoctorAuthorization(auth.id, 'revoked')}
                           >
-                            <UserX className="h-3.5 w-3.5" />
-                            <span>Revoke</span>
+                            Revoke access
                           </Button>
                         ) : (
                           <Button
                             type="button"
                             size="sm"
-                            variant="outline"
-                            onClick={() => respondCaregiverInvite(conn.id, 'accepted')}
+                            onClick={() => void respondDoctorAuthorization(auth.id, 'authorized')}
                           >
-                            Restore
+                            Re-authorize
                           </Button>
                         )}
                       </div>
-                    </div>
-
-                    {conn.status !== 'revoked' && (
-                      <div className="space-y-3 border-t border-slate-100 pt-3">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          {(
-                            [
-                              { key: 'viewSchedules', label: 'View medication schedules' },
-                              { key: 'receiveDoseAlerts', label: 'Receive dose alerts' },
-                              { key: 'viewHistoryAndReports', label: 'View history & reports' },
-                              { key: 'viewClinicianNotes', label: 'View clinician notes' },
-                            ] as const
-                          ).map((perm) => (
-                            <label
-                              key={perm.key}
-                              className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-xs font-medium text-slate-700 cursor-pointer"
-                            >
-                              <span>{perm.label}</span>
-                              <Switch
-                                checked={conn.permissions[perm.key]}
-                                onCheckedChange={(checked) =>
-                                  updateCaregiverPermissions(conn.id, {
-                                    ...conn.permissions,
-                                    [perm.key]: checked,
-                                  })
-                                }
-                              />
-                            </label>
-                          ))}
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 pt-1">
-                          <label className="flex items-center gap-2">
-                            <span>Alert threshold (repeated unconfirmed doses):</span>
-                            <select
-                              value={conn.alertPreferences.repeatedMissedThreshold}
-                              onChange={(e) =>
-                                updateCaregiverPermissions(conn.id, conn.permissions, {
-                                  ...conn.alertPreferences,
-                                  repeatedMissedThreshold: Number(e.target.value),
-                                })
-                              }
-                              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs"
-                            >
-                              {[1, 2, 3, 4, 5].map((n) => (
-                                <option key={n} value={n}>
-                                  {n} missed
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Alert History for Patient */}
           <Card>
             <CardHeader>
-              <CardTitle>Simulated Care Circle alerts</CardTitle>
+              <CardTitle className="text-[#F8FAFC]">Care Circle alerts</CardTitle>
               <CardDescription>
-                Visibility of simulated delivery states and caregiver acknowledgements
+                Visibility of alert delivery states and caregiver follow-up acknowledgements
               </CardDescription>
             </CardHeader>
             <CardContent>
               {patientAlerts.length === 0 ? (
-                <p className="text-xs text-slate-500">No simulated alerts recorded for this patient.</p>
+                <p className="text-xs text-[#A8B8CC]">No Care Circle alerts recorded yet.</p>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-[#334155]">
                   {patientAlerts.map((a) => (
-                    <div key={a.id} className="py-2.5 first:pt-0 last:pb-0 text-xs space-y-0.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-900">{a.title}</span>
-                        <span className="font-medium capitalize text-[#0D9488]">
-                          Simulated · {a.deliveryState}
+                    <div key={a.id} className="py-3 first:pt-0 last:pb-0 text-xs space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-[#F8FAFC]">{a.title}</span>
+                        <span className="font-medium capitalize text-[#2DD4BF]">
+                          {a.delivery_status}
                         </span>
                       </div>
-                      <p className="text-slate-600">{a.reason}</p>
-                      {a.followUpNote && (
-                        <p className="text-[#0F766E]">
-                          Follow-up ({a.acknowledgedBy}): {a.followUpNote}
+                      <p className="text-[#A8B8CC]">{a.reason}</p>
+                      <p className="text-[11px] text-[#A8B8CC]">
+                        {a.channel} · {formatTimestamp(a.created_at)}
+                      </p>
+                      {a.follow_up_note && (
+                        <p className="rounded-lg border border-[#2DD4BF]/25 bg-[#2DD4BF]/10 px-2.5 py-1.5 text-[#2DD4BF]">
+                          Follow-up ({a.acknowledged_by}): {a.follow_up_note}
                         </p>
                       )}
                     </div>
@@ -299,132 +428,133 @@ export function CareCirclePage() {
 
         {/* Right Column: Invite Caregiver + Separate Family Medical History */}
         <div className="lg:col-span-5 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-4 w-4 text-[#0D9488]" />
-                <span>Invite to Care Circle</span>
-              </CardTitle>
-              <CardDescription>
-                Choose relationship label, priority, and initial consent permissions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleInviteSubmit} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Full name</label>
-                  <Input
-                    value={inviteName}
-                    onChange={(e) => setInviteName(e.target.value)}
-                    placeholder="e.g., Priya Patel"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
-                  <Input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="name@family-care.example"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+          {isPatientPerspective && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-[#F8FAFC]">
+                  <UserPlus className="h-4 w-4 text-[#2DD4BF]" />
+                  <span>Invite to Care Circle</span>
+                </CardTitle>
+                <CardDescription>
+                  Choose relationship label, priority, and initial consent scopes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleInviteSubmit} className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Relationship
-                    </label>
-                    <select
-                      value={relationship}
-                      onChange={(e) => setRelationship(e.target.value as RelationshipLabel)}
-                      className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800"
-                    >
-                      {RELATIONSHIPS.map((rel) => (
-                        <option key={rel} value={rel}>
-                          {rel}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="block text-xs font-medium text-[#F8FAFC] mb-1">Full name</label>
+                    <Input
+                      value={inviteName}
+                      onChange={(e) => setInviteName(e.target.value)}
+                      placeholder="e.g., Priya Patel"
+                      required
+                    />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Contact priority
-                    </label>
-                    <select
-                      value={priority}
-                      onChange={(e) => setPriority(e.target.value as 'primary' | 'secondary')}
-                      className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800"
-                    >
-                      <option value="primary">Primary</option>
-                      <option value="secondary">Secondary</option>
-                    </select>
+                    <label className="block text-xs font-medium text-[#F8FAFC] mb-1">Email</label>
+                    <Input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="caregiver@example.com"
+                      required
+                    />
                   </div>
-                </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-[#F8FAFC] mb-1">
+                        Relationship
+                      </label>
+                      <select
+                        value={relationship}
+                        onChange={(e) => setRelationship(e.target.value as RelationshipLabel)}
+                        className="w-full h-10 rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs text-[#F8FAFC]"
+                      >
+                        {RELATIONSHIPS.map((rel) => (
+                          <option key={rel} value={rel}>
+                            {rel}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-[#F8FAFC] mb-1">
+                        Contact priority
+                      </label>
+                      <select
+                        value={priority}
+                        onChange={(e) => setPriority(e.target.value as 'primary' | 'secondary')}
+                        className="w-full h-10 rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs text-[#F8FAFC]"
+                      >
+                        <option value="primary">Primary</option>
+                        <option value="secondary">Secondary</option>
+                      </select>
+                    </div>
+                  </div>
 
-                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={permSchedule}
-                      onChange={(e) => setPermSchedule(e.target.checked)}
-                      className="accent-[#0D9488]"
-                    />
-                    <span>View medication schedules</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={permAlerts}
-                      onChange={(e) => setPermAlerts(e.target.checked)}
-                      className="accent-[#0D9488]"
-                    />
-                    <span>Receive simulated dose alerts</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={permHistory}
-                      onChange={(e) => setPermHistory(e.target.checked)}
-                      className="accent-[#0D9488]"
-                    />
-                    <span>View care history &amp; reports</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={permNotes}
-                      onChange={(e) => setPermNotes(e.target.checked)}
-                      className="accent-[#0D9488]"
-                    />
-                    <span>View clinician notes</span>
-                  </label>
-                </div>
+                  <div className="space-y-2 rounded-2xl border border-[#334155] bg-[#223451] p-3.5 text-xs text-[#F8FAFC]">
+                    <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#A8B8CC]">
+                      Initial Consent Scopes
+                    </span>
+                    {CONSENT_SCOPE_LIST.map((scopeMeta) => {
+                      const checked =
+                        scopeMeta.scope === 'view_schedules'
+                          ? permSchedule
+                          : scopeMeta.scope === 'receive_dose_alerts'
+                            ? permAlerts
+                            : scopeMeta.scope === 'view_history_reports'
+                              ? permHistory
+                              : permNotes;
+                      const toggle =
+                        scopeMeta.scope === 'view_schedules'
+                          ? setPermSchedule
+                          : scopeMeta.scope === 'receive_dose_alerts'
+                            ? setPermAlerts
+                            : scopeMeta.scope === 'view_history_reports'
+                              ? setPermHistory
+                              : setPermNotes;
+                      return (
+                        <label key={scopeMeta.scope} className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => toggle(e.target.checked)}
+                            className="accent-[#8B5CF6] mt-0.5"
+                          />
+                          <span>
+                            <strong className="font-medium text-[#F8FAFC]">{scopeMeta.label}</strong>
+                            <span className="block text-[11px] text-[#A8B8CC]">{scopeMeta.description}</span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
 
-                <Button type="submit" className="w-full">
-                  Send Care Circle invite
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                  <Button type="submit" className="w-full">
+                    Send Care Circle invite
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Optional Family Medical History — Explicitly separate from access permissions */}
+          {/* Optional Family Medical History */}
           <Card>
             <CardHeader>
-              <CardTitle>Family medical history (optional)</CardTitle>
+              <CardTitle className="text-[#F8FAFC]">Family medical history (optional)</CardTitle>
               <CardDescription>
                 Separated from Care Circle permissions. Records reported family context without inferring hereditary diagnoses.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {familyHistory.length > 0 && (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-[#334155]">
                   {familyHistory.map((item) => (
                     <div key={item.id} className="py-2 first:pt-0 last:pb-0 text-xs">
-                      <p className="font-semibold text-slate-900">
+                      <p className="font-semibold text-[#F8FAFC]">
                         {item.relationship}: {item.reportedCondition}
                       </p>
-                      <p className="text-slate-500">
+                      <p className="text-[#A8B8CC]">
                         Source: {item.informationSource} · {formatShortDate(item.recordedAt)}
                       </p>
                     </div>
@@ -432,13 +562,13 @@ export function CareCirclePage() {
                 </div>
               )}
 
-              <form onSubmit={handleAddFamilyHistory} className="space-y-2.5 border-t border-slate-100 pt-3">
+              <form onSubmit={handleAddFamilyHistory} className="space-y-2.5 border-t border-[#334155] pt-3">
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     aria-label="Family relationship"
                     value={fmhRel}
                     onChange={(e) => setFmhRel(e.target.value as RelationshipLabel)}
-                    className="h-9 rounded-xl border border-slate-200 bg-white px-2.5 text-xs"
+                    className="h-9 rounded-xl border border-[#334155] bg-[#0B1220] px-2.5 text-xs text-[#F8FAFC]"
                   >
                     {RELATIONSHIPS.map((rel) => (
                       <option key={rel} value={rel}>
@@ -467,6 +597,8 @@ export function CareCirclePage() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

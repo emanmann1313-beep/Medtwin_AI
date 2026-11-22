@@ -1,6 +1,13 @@
 export type WorkspaceRole = 'patient' | 'caregiver' | 'doctor' | 'hospital_admin';
 
+export type CaregiverLanguage = 'en' | 'hi' | 'pa';
+
 export type RelationshipLabel =
+  | 'Mother'
+  | 'Father'
+  | 'Son'
+  | 'Daughter'
+  | 'Spouse'
   | 'Parent'
   | 'Child'
   | 'Sibling'
@@ -14,12 +21,30 @@ export type MedicationStatus = 'active' | 'completed' | 'stopped';
 export type DoseState = 'scheduled' | 'due' | 'taken' | 'skipped' | 'overdue';
 
 export type AlertDeliveryState =
+  | 'draft'
+  | 'opened_messaging_app'
   | 'created'
   | 'queued'
   | 'sent'
   | 'delivered'
   | 'failed'
   | 'acknowledged';
+
+export type CareAlertType =
+  | 'repeated_missed_doses'
+  | 'supply_running_low'
+  | 'upcoming_refill'
+  | 'caregiver_invitation'
+  | 'patient_assistance';
+
+export type CareAlertChannel = 'whatsapp' | 'sms' | 'in_app';
+
+export interface MessagingProviderStatus {
+  whatsappProviderConfigured: boolean;
+  smsProviderConfigured: boolean;
+  whatsappProviderLabel: string;
+  smsProviderLabel: string;
+}
 
 export type CareHistoryCategory =
   | 'prescription'
@@ -134,11 +159,27 @@ export interface CaregiverPermissions {
   viewClinicianNotes: boolean;
 }
 
+export interface CaregiverAlertPreferences {
+  repeatedMissedThreshold: number;
+  notifyOnRefillNeeded: boolean;
+  notifyOnDadiNaniShare: boolean;
+  repeatedMissedDoses?: boolean;
+  supplyRunningLow?: boolean;
+  upcomingRefillDate?: boolean;
+  caregiverInvitation?: boolean;
+  patientRequestedAssistance?: boolean;
+}
+
 export interface CaregiverProfile {
   id: string;
   name: string;
   email: string;
   phoneLabel: string;
+  phoneCountryCode?: string;
+  phoneNumber?: string;
+  whatsappSameAsPhone?: boolean;
+  whatsappNumber?: string;
+  preferredLanguage?: CaregiverLanguage;
 }
 
 export interface CaregiverConnection {
@@ -146,15 +187,18 @@ export interface CaregiverConnection {
   patientId: string;
   caregiverId: string;
   caregiverName: string;
+  caregiverEmail?: string;
+  phoneCountryCode?: string;
+  phoneNumber?: string;
+  whatsappSameAsPhone?: boolean;
+  whatsappNumber?: string;
+  preferredLanguage?: CaregiverLanguage;
   relationship: RelationshipLabel;
   contactPriority: 'primary' | 'secondary';
   status: 'invited' | 'accepted' | 'revoked';
+  requestedBy?: 'patient' | 'caregiver';
   permissions: CaregiverPermissions;
-  alertPreferences: {
-    repeatedMissedThreshold: number;
-    notifyOnRefillNeeded: boolean;
-    notifyOnDadiNaniShare: boolean;
-  };
+  alertPreferences: CaregiverAlertPreferences;
   invitedAt: string;
   respondedAt?: string;
 }
@@ -172,6 +216,14 @@ export interface CareAlert {
   id: string;
   patientId: string;
   caregiverId?: string;
+  caregiverName?: string;
+  alertType?: CareAlertType;
+  channel?: CareAlertChannel;
+  recipientPhone?: string;
+  messageBody?: string;
+  providerConfirmed?: boolean;
+  providerMessageId?: string;
+  providerError?: string;
   title: string;
   reason: string;
   severity: 'attention' | 'urgent';

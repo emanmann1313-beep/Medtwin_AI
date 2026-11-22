@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import {
   Check,
+  FileScan,
   PackagePlus,
+  Pill,
   RotateCcw,
   SkipForward,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useMedTwin } from '@/src/context/MedTwinContext';
 import {
   buildDoseSlotsForDate,
@@ -28,6 +31,8 @@ type ScheduleHorizon = 'daily' | 'weekly' | 'monthly';
 export function MedicationsPage() {
   const {
     state,
+    hasPatients,
+    activeRole,
     activePatient,
     logDose,
     undoDose,
@@ -47,20 +52,20 @@ export function MedicationsPage() {
 
   const todayStr = getTodayIso();
 
-  const patientMeds = useMemo(
-    () =>
-      state.medications.filter(
-        (m) =>
-          m.patientId === activePatient.id &&
-          (statusFilter === 'all' || m.status === statusFilter),
-      ),
-    [activePatient.id, state.medications, statusFilter],
-  );
+  const patientMeds = useMemo(() => {
+    if (!hasPatients || !activePatient.id) return [];
+    return state.medications.filter(
+      (m) =>
+        m.patientId === activePatient.id &&
+        (statusFilter === 'all' || m.status === statusFilter),
+    );
+  }, [activePatient.id, hasPatients, state.medications, statusFilter]);
 
   const refillMap = useMemo(() => {
+    if (!hasPatients || !activePatient.id) return new Map();
     const forecasts = computeRefillForecasts(activePatient.id, state.medications);
     return new Map(forecasts.map((f) => [f.medicationId, f]));
-  }, [activePatient.id, state.medications]);
+  }, [activePatient.id, hasPatients, state.medications]);
 
   const scheduleDates = useMemo(() => {
     if (horizon === 'daily') return [todayStr];
@@ -69,6 +74,24 @@ export function MedicationsPage() {
     }
     return Array.from({ length: 30 }, (_, i) => addDaysIso(todayStr, -i));
   }, [horizon, todayStr]);
+
+  if (!hasPatients || !activePatient.id) {
+    return (
+      <Card>
+        <CardContent className="py-12 px-6 text-center space-y-3">
+          <Pill className="mx-auto h-9 w-9 text-[#8B5CF6]" />
+          <h3 className="font-display text-lg font-semibold text-[#F8FAFC]">
+            No patient schedules available yet
+          </h3>
+          <p className="mx-auto max-w-md text-xs text-[#A8B8CC]">
+            {activeRole === 'caregiver'
+              ? 'Medication schedules appear here once a patient approves your Care Circle request with schedule permissions.'
+              : 'Add or scan a prescription to build your active medication schedule.'}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -81,30 +104,50 @@ export function MedicationsPage() {
               Confirmed schedules, start/end dates, recorded remaining supply, and refill forecasts
             </CardDescription>
           </div>
-          <div className="inline-flex rounded-xl bg-slate-100 p-1">
-            {(['all', 'active', 'completed', 'stopped'] as const).map((st) => (
-              <button
-                key={st}
-                type="button"
-                onClick={() => setStatusFilter(st)}
-                className={cn(
-                  'rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors cursor-pointer',
-                  statusFilter === st
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900',
-                )}
-              >
-                {st}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            {activeRole === 'patient' && (
+              <Link to="/prescriptions">
+                <Button type="button" size="sm" variant="outline">
+                  <FileScan className="h-3.5 w-3.5" />
+                  <span>Scan prescription</span>
+                </Button>
+              </Link>
+            )}
+            <div className="inline-flex rounded-xl border border-[#334155] bg-[#101B30] p-1">
+              {(['all', 'active', 'completed', 'stopped'] as const).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setStatusFilter(st)}
+                  className={cn(
+                    'rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors cursor-pointer',
+                    statusFilter === st
+                      ? 'bg-[#8B5CF6] text-white shadow-[0_0_12px_rgba(139,92,246,0.28)]'
+                      : 'text-[#A8B8CC] hover:text-[#F8FAFC]',
+                  )}
+                >
+                  {st}
+                </button>
+              ))}
+            </div>
           </div>
         </CardHeader>
 
         <CardContent>
           {patientMeds.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-500">
-              No medications match this status filter.
-            </p>
+            <div className="py-10 text-center space-y-3">
+              <p className="text-sm text-[#A8B8CC]">
+                No medications recorded matching this filter.
+              </p>
+              {activeRole === 'patient' && (
+                <Link to="/prescriptions">
+                  <Button type="button" size="sm">
+                    <FileScan className="h-4 w-4" />
+                    <span>Add or scan your first prescription</span>
+                  </Button>
+                </Link>
+              )}
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {patientMeds.map((med) => {
@@ -112,54 +155,56 @@ export function MedicationsPage() {
                 return (
                   <div
                     key={med.id}
-                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 space-y-4"
+                    className="flex flex-col justify-between rounded-2xl border border-[#334155] bg-[#223451] p-5 space-y-4"
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-display text-base font-semibold text-slate-900">
+                          <h3 className="font-display text-base font-semibold text-[#F8FAFC]">
                             {med.name} {med.strength}
                           </h3>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-[#A8B8CC]">
                             {med.doseAndRoute} · Prescriber: {med.prescriberName ?? 'On file'}
                           </p>
                         </div>
                         <span
                           className={cn(
                             'text-xs font-semibold capitalize',
-                            med.status === 'active' && 'text-[#0D9488]',
-                            med.status === 'completed' && 'text-[#2563EB]',
-                            med.status === 'stopped' && 'text-slate-500',
+                            med.status === 'active' && 'text-[#2DD4BF]',
+                            med.status === 'completed' && 'text-[#8B5CF6]',
+                            med.status === 'stopped' && 'text-[#A8B8CC]',
                           )}
                         >
                           {med.status}
                         </span>
                       </div>
 
-                      <p className="text-sm text-slate-700">{med.instructions}</p>
+                      <p className="text-sm text-[#F8FAFC]/90">{med.instructions}</p>
 
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#334155] text-xs">
                         <div>
-                          <span className="text-slate-400 block">Scheduled times</span>
-                          <span className="font-mono text-slate-800 tabular-nums">
+                          <span className="text-[#A8B8CC] block">Scheduled times</span>
+                          <span className="font-mono text-[#F8FAFC] tabular-nums">
                             {med.asNeeded
                               ? 'As needed (PRN)'
                               : med.scheduledTimes.map(formatTime12h).join(', ')}
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Start / End dates</span>
-                          <span className="text-slate-800 tabular-nums">
+                          <span className="text-[#A8B8CC] block">Start / End dates</span>
+                          <span className="text-[#F8FAFC] tabular-nums">
                             {formatShortDate(med.startDate)} –{' '}
                             {med.endDate ? formatShortDate(med.endDate) : 'Ongoing'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Remaining quantity</span>
+                          <span className="text-[#A8B8CC] block">Remaining quantity</span>
                           <span
                             className={cn(
                               'font-mono font-semibold tabular-nums',
-                              forecast?.needsRefill ? 'text-amber-700' : 'text-slate-800',
+                              forecast?.needsRefill
+                                ? 'text-[#FBBF24]'
+                                : 'text-[#F8FAFC]',
                             )}
                           >
                             {typeof med.remainingQuantity === 'number'
@@ -168,8 +213,8 @@ export function MedicationsPage() {
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Estimated refill date</span>
-                          <span className="text-slate-800 tabular-nums">
+                          <span className="text-[#A8B8CC] block">Estimated refill date</span>
+                          <span className="text-[#F8FAFC] tabular-nums">
                             {forecast?.estimatedRefillDate
                               ? formatShortDate(forecast.estimatedRefillDate)
                               : 'Not calculable'}
@@ -178,7 +223,7 @@ export function MedicationsPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#334155]">
                       <Button
                         type="button"
                         variant="outline"
@@ -238,7 +283,7 @@ export function MedicationsPage() {
               Daily, weekly, and monthly records distinguishing taken, skipped, due, scheduled, and overdue/unconfirmed doses
             </CardDescription>
           </div>
-          <div className="inline-flex rounded-xl bg-slate-100 p-1">
+          <div className="inline-flex rounded-xl border border-[#334155] bg-[#101B30] p-1">
             {(
               [
                 { id: 'daily', label: 'Daily' },
@@ -253,8 +298,8 @@ export function MedicationsPage() {
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                   horizon === tab.id
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900',
+                    ? 'bg-[#8B5CF6] text-white shadow-[0_0_12px_rgba(139,92,246,0.28)]'
+                    : 'text-[#A8B8CC] hover:text-[#F8FAFC]',
                 )}
               >
                 {tab.label}
@@ -264,126 +309,136 @@ export function MedicationsPage() {
         </CardHeader>
 
         <CardContent className="space-y-5">
-          {scheduleDates.map((dateStr) => {
-            const slots = buildDoseSlotsForDate(
-              activePatient.id,
-              dateStr,
-              state.medications,
-              state.doseLogs,
-            );
-            if (slots.length === 0) return null;
+          {scheduleDates.every(
+            (dateStr) =>
+              buildDoseSlotsForDate(activePatient.id, dateStr, state.medications, state.doseLogs)
+                .length === 0,
+          ) ? (
+            <p className="py-6 text-center text-xs text-[#A8B8CC]">
+              No scheduled dose slots during this period.
+            </p>
+          ) : (
+            scheduleDates.map((dateStr) => {
+              const slots = buildDoseSlotsForDate(
+                activePatient.id,
+                dateStr,
+                state.medications,
+                state.doseLogs,
+              );
+              if (slots.length === 0) return null;
 
-            return (
-              <div key={dateStr} className="space-y-2 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
-                <h4 className="font-display text-xs font-semibold text-slate-500">
-                  {dateStr === todayStr ? `Today · ${formatShortDate(dateStr)}` : formatShortDate(dateStr)}
-                </h4>
-                <div className="divide-y divide-slate-100">
-                  {slots.map((slot) => {
-                    const stateText =
-                      slot.state === 'taken'
-                        ? 'Taken'
-                        : slot.state === 'skipped'
-                          ? 'Skipped'
-                          : slot.state === 'overdue'
-                            ? 'Overdue / Unconfirmed'
-                            : slot.state === 'due'
-                              ? 'Due'
-                              : 'Scheduled';
-                    const stateClass =
-                      slot.state === 'taken'
-                        ? 'text-[#0D9488]'
-                        : slot.state === 'skipped'
-                          ? 'text-amber-700'
-                          : slot.state === 'overdue'
-                            ? 'text-red-600'
-                            : slot.state === 'due'
-                              ? 'text-[#2563EB]'
-                              : 'text-slate-500';
+              return (
+                <div key={dateStr} className="space-y-2 border-b border-[#334155] pb-4 last:border-0 last:pb-0">
+                  <h4 className="font-display text-xs font-semibold text-[#A8B8CC]">
+                    {dateStr === todayStr ? `Today · ${formatShortDate(dateStr)}` : formatShortDate(dateStr)}
+                  </h4>
+                  <div className="divide-y divide-[#334155]">
+                    {slots.map((slot) => {
+                      const stateText =
+                        slot.state === 'taken'
+                          ? 'Taken'
+                          : slot.state === 'skipped'
+                            ? 'Skipped'
+                            : slot.state === 'overdue'
+                              ? 'Overdue / Unconfirmed'
+                              : slot.state === 'due'
+                                ? 'Due'
+                                : 'Scheduled';
+                      const stateClass =
+                        slot.state === 'taken'
+                          ? 'text-[#34D399]'
+                          : slot.state === 'skipped'
+                            ? 'text-[#FBBF24]'
+                            : slot.state === 'overdue'
+                              ? 'text-[#FB7185]'
+                              : slot.state === 'due'
+                                ? 'text-[#8B5CF6]'
+                                : 'text-[#A8B8CC]';
 
-                    return (
-                      <div
-                        key={slot.slotKey}
-                        className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-20 shrink-0 font-mono text-xs font-semibold text-slate-700 tabular-nums">
-                            {formatTime12h(slot.scheduledTime)}
-                          </span>
-                          <div className="min-w-0">
-                            <span className="text-sm font-medium text-slate-900">
-                              {slot.medication.name} {slot.medication.strength}
+                      return (
+                        <div
+                          key={slot.slotKey}
+                          className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="w-20 shrink-0 font-mono text-xs font-semibold text-[#F8FAFC] tabular-nums">
+                              {formatTime12h(slot.scheduledTime)}
                             </span>
-                            <span aria-hidden="true" className="mx-2 text-slate-300">
-                              ·
-                            </span>
-                            <span className={cn('text-xs font-semibold', stateClass)}>
-                              {stateText}
-                            </span>
-                            {slot.log?.skipReason && (
-                              <span className="ml-2 text-xs text-slate-500">
-                                ({slot.log.skipReason})
+                            <div className="min-w-0">
+                              <span className="text-sm font-medium text-[#F8FAFC]">
+                                {slot.medication.name} {slot.medication.strength}
                               </span>
-                            )}
+                              <span aria-hidden="true" className="mx-2 text-[#334155]">
+                                ·
+                              </span>
+                              <span className={cn('text-xs font-semibold', stateClass)}>
+                                {stateText}
+                              </span>
+                              {slot.log?.skipReason && (
+                                <span className="ml-2 text-xs text-[#A8B8CC]">
+                                  ({slot.log.skipReason})
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          {!slot.log ? (
-                            <>
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={() =>
-                                  logDose({
-                                    patientId: activePatient.id,
-                                    medicationId: slot.medication.id,
-                                    scheduledDate: slot.scheduledDate,
-                                    scheduledTime: slot.scheduledTime,
-                                    status: 'taken',
-                                  })
-                                }
-                              >
-                                <Check className="h-3.5 w-3.5" />
-                                <span>Taken</span>
-                              </Button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {!slot.log ? (
+                              <>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() =>
+                                    logDose({
+                                      patientId: activePatient.id,
+                                      medicationId: slot.medication.id,
+                                      scheduledDate: slot.scheduledDate,
+                                      scheduledTime: slot.scheduledTime,
+                                      status: 'taken',
+                                    })
+                                  }
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                  <span>Taken</span>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSkipReason('');
+                                    setSkipTarget({
+                                      medicationId: slot.medication.id,
+                                      medicationName: `${slot.medication.name} ${slot.medication.strength}`,
+                                      scheduledDate: slot.scheduledDate,
+                                      scheduledTime: slot.scheduledTime,
+                                    });
+                                  }}
+                                >
+                                  <SkipForward className="h-3.5 w-3.5" />
+                                  <span>Skip</span>
+                                </Button>
+                              </>
+                            ) : (
                               <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                onClick={() => {
-                                  setSkipReason('');
-                                  setSkipTarget({
-                                    medicationId: slot.medication.id,
-                                    medicationName: `${slot.medication.name} ${slot.medication.strength}`,
-                                    scheduledDate: slot.scheduledDate,
-                                    scheduledTime: slot.scheduledTime,
-                                  });
-                                }}
+                                onClick={() => undoDose(slot.log!.id)}
                               >
-                                <SkipForward className="h-3.5 w-3.5" />
-                                <span>Skip</span>
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                <span>Undo</span>
                               </Button>
-                            </>
-                          ) : (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => undoDose(slot.log!.id)}
-                            >
-                              <RotateCcw className="h-3.5 w-3.5" />
-                              <span>Undo</span>
-                            </Button>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </CardContent>
       </Card>
 
@@ -413,7 +468,7 @@ export function MedicationsPage() {
             className="space-y-4"
           >
             <div>
-              <label htmlFor="med-skip-reason" className="block text-xs font-medium text-slate-700 mb-1.5">
+              <label htmlFor="med-skip-reason" className="block text-xs font-medium text-[#F8FAFC] mb-1.5">
                 Optional reason
               </label>
               <Input

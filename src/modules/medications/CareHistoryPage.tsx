@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Download, Search, ShieldAlert } from 'lucide-react';
+import { Download, History, Search, ShieldAlert } from 'lucide-react';
 import { useMedTwin } from '@/src/context/MedTwinContext';
 import { CareHistoryCategory } from '@/src/types/medtwin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
@@ -21,20 +21,20 @@ const CATEGORY_OPTIONS: Array<{ id: CareHistoryCategory | 'all'; label: string }
 ];
 
 export function CareHistoryPage() {
-  const { state, activePatient, activeRole } = useMedTwin();
+  const { state, hasPatients, activePatient, activeRole } = useMedTwin();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CareHistoryCategory | 'all'>('all');
 
   // Permission enforcement when viewing as Caregiver
   const caregiverConnection = useMemo(() => {
-    if (activeRole !== 'caregiver') return null;
+    if (activeRole !== 'caregiver' || !hasPatients || !activePatient.id) return null;
     return state.connections.find(
       (c) =>
         c.patientId === activePatient.id &&
         c.caregiverId === state.activeCaregiverId &&
         c.status === 'accepted',
     );
-  }, [activePatient.id, activeRole, state.activeCaregiverId, state.connections]);
+  }, [activePatient.id, activeRole, hasPatients, state.activeCaregiverId, state.connections]);
 
   const canViewHistoryAndReports =
     activeRole === 'patient' ||
@@ -46,9 +46,8 @@ export function CareHistoryPage() {
     (activeRole === 'caregiver' && Boolean(caregiverConnection?.permissions.viewClinicianNotes));
 
   const unifiedTimeline = useMemo(() => {
-    if (!canViewHistoryAndReports) return [];
+    if (!hasPatients || !activePatient.id || !canViewHistoryAndReports) return [];
 
-    // Combine base history events with appointments & reports if not already represented
     const apptEvents = state.appointments
       .filter((a) => a.patientId === activePatient.id)
       .map((a) => ({
@@ -83,6 +82,7 @@ export function CareHistoryPage() {
     canViewClinicianNotes,
     canViewHistoryAndReports,
     categoryFilter,
+    hasPatients,
     searchQuery,
     state.appointments,
     state.history,
@@ -107,15 +107,31 @@ export function CareHistoryPage() {
     URL.revokeObjectURL(url);
   };
 
+  if (!hasPatients || !activePatient.id) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center space-y-3">
+          <History className="mx-auto h-9 w-9 text-[#8B5CF6]" />
+          <h3 className="font-display text-lg font-semibold text-[#F8FAFC]">
+            No shared care history yet
+          </h3>
+          <p className="mx-auto max-w-md text-xs text-[#A8B8CC]">
+            Shared medication history, prescription records, and refill events will appear once an authorized patient connection is active.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!canViewHistoryAndReports) {
     return (
       <Card>
         <CardContent className="py-12 text-center space-y-3">
-          <ShieldAlert className="mx-auto h-10 w-10 text-amber-600" />
-          <h3 className="font-display text-lg font-semibold text-slate-900">
+          <ShieldAlert className="mx-auto h-10 w-10 text-[#FBBF24]" />
+          <h3 className="font-display text-lg font-semibold text-[#F8FAFC]">
             History &amp; Reports permission required
           </h3>
-          <p className="mx-auto max-w-md text-sm text-slate-500">
+          <p className="mx-auto max-w-md text-sm text-[#A8B8CC]">
             Your current Care Circle connection for {activePatient.name} does not include permission to view care history and reports.
           </p>
         </CardContent>
@@ -147,7 +163,7 @@ export function CareHistoryPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative w-full lg:max-w-sm">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A8B8CC]" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -167,8 +183,8 @@ export function CareHistoryPage() {
                   className={cn(
                     'rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                     categoryFilter === opt.id
-                      ? 'bg-[#0B1220] text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                      ? 'bg-[#8B5CF6] text-white shadow-[0_0_12px_rgba(139,92,246,0.28)]'
+                      : 'border border-[#334155] bg-[#223451] text-[#A8B8CC] hover:bg-[#1A2740] hover:text-[#F8FAFC]',
                   )}
                 >
                   {opt.label}
@@ -178,34 +194,34 @@ export function CareHistoryPage() {
           </div>
 
           {!canViewClinicianNotes && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[#A8B8CC]">
               Clinician-only notes are hidden based on current workspace permissions.
             </p>
           )}
 
           {unifiedTimeline.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-500">
+            <p className="py-10 text-center text-sm text-[#A8B8CC]">
               No care history records match your current search or filter.
             </p>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[#334155]">
               {unifiedTimeline.map((ev) => (
                 <div
                   key={ev.id}
                   className="flex flex-col gap-1.5 py-3.5 first:pt-1 last:pb-1 sm:flex-row sm:items-start sm:justify-between"
                 >
                   <div className="space-y-0.5 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                      <span className="font-semibold uppercase tracking-wide text-[#0D9488]">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#A8B8CC]">
+                      <span className="font-semibold uppercase tracking-wide text-[#2DD4BF]">
                         {ev.category.replace('_', ' ')}
                       </span>
                       <span aria-hidden="true">·</span>
                       <span>Recorded by {ev.actorName}</span>
                     </div>
-                    <p className="text-sm font-semibold text-slate-900">{ev.title}</p>
-                    <p className="text-xs text-slate-600">{ev.details}</p>
+                    <p className="text-sm font-semibold text-[#F8FAFC]">{ev.title}</p>
+                    <p className="text-xs text-[#A8B8CC]">{ev.details}</p>
                   </div>
-                  <span className="font-mono text-xs text-slate-400 tabular-nums shrink-0">
+                  <span className="font-mono text-xs text-[#A8B8CC] tabular-nums shrink-0">
                     {formatTimestamp(ev.timestamp)}
                   </span>
                 </div>

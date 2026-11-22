@@ -46,26 +46,36 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div
               key={t.id}
               className={cn(
-                'pointer-events-auto flex items-start gap-3 rounded-2xl border bg-white p-4 shadow-lg',
-                variant === 'success' && 'border-teal-200',
-                variant === 'warning' && 'border-amber-200',
-                variant === 'error' && 'border-red-200',
-                variant === 'info' && 'border-slate-200',
+                'pointer-events-auto flex items-start gap-3 rounded-2xl border bg-[#FFFFFF] p-4 shadow-lg dark:bg-[#172033] dashboard-dark:bg-[#223451] dashboard-dark:shadow-[0_16px_40px_rgba(2,6,23,0.65)]',
+                variant === 'success' && 'border-[#0D9488]/40 dark:border-[#14B8A6]/40 dashboard-dark:border-[#34D399]/50',
+                variant === 'warning' && 'border-amber-300 dark:border-amber-500/40 dashboard-dark:border-[#FBBF24]/50',
+                variant === 'error' && 'border-red-300 dark:border-red-500/40 dashboard-dark:border-[#FB7185]/50',
+                variant === 'info' && 'border-[#E2E8F0] dark:border-[#334155] dashboard-dark:border-[#334155]',
               )}
             >
-              {variant === 'success' && <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#0D9488]" />}
-              {variant === 'warning' && <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />}
-              {variant === 'error' && <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />}
-              {variant === 'info' && <Info className="mt-0.5 h-5 w-5 shrink-0 text-[#2563EB]" />}
+              {variant === 'success' && (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#0D9488] dark:text-[#14B8A6] dashboard-dark:text-[#34D399]" />
+              )}
+              {variant === 'warning' && (
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 dashboard-dark:text-[#FBBF24]" />
+              )}
+              {variant === 'error' && (
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400 dashboard-dark:text-[#FB7185]" />
+              )}
+              {variant === 'info' && (
+                <Info className="mt-0.5 h-5 w-5 shrink-0 text-[#3B82F6] dark:text-[#60A5FA] dashboard-dark:text-[#2DD4BF]" />
+              )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-slate-900">{t.title}</p>
-                {t.description && <p className="mt-0.5 text-xs text-slate-600">{t.description}</p>}
+                <p className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC] dashboard-dark:text-[#F8FAFC]">{t.title}</p>
+                {t.description && (
+                  <p className="mt-0.5 text-xs text-[#64748B] dark:text-[#94A3B8] dashboard-dark:text-[#A8B8CC]">{t.description}</p>
+                )}
               </div>
               <button
                 type="button"
                 onClick={() => removeToast(t.id)}
                 aria-label="Dismiss notification"
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-lg p-1 text-[#64748B] hover:bg-[#CCFBF1]/50 hover:text-[#172554] dark:text-[#94A3B8] dark:hover:bg-[#334155] dark:hover:text-[#F8FAFC] dashboard-dark:text-[#A8B8CC] dashboard-dark:hover:bg-[#1A2740] dashboard-dark:hover:text-[#F8FAFC]"
               >
                 <X className="h-4 w-4" />
               </button>

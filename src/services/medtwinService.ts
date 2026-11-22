@@ -1,6 +1,11 @@
 import {
+  AlertDeliveryState,
   CareAlert,
+  CareAlertChannel,
+  CareAlertType,
+  CaregiverAlertPreferences,
   CaregiverConnection,
+  CaregiverLanguage,
   CaregiverPermissions,
   ClinicianNote,
   DadiNaniEntry,
@@ -15,7 +20,111 @@ import { buildSeedState } from '@/src/data/seedData';
 import { addDaysIso } from '@/src/lib/utils';
 import { getTodayIso } from '@/src/services/adherenceEngine';
 
+import { AuthUser } from '@/src/types/auth';
+
 const DEMO_STORAGE_KEY = 'medtwin_demo_state_v1';
+let activeStorageKey = DEMO_STORAGE_KEY;
+
+export function getStorageKeyForUser(user: AuthUser | null): string {
+  return user ? `medtwin_user_state_v1_${user.id}` : DEMO_STORAGE_KEY;
+}
+
+export function buildProductionStateForUser(user: AuthUser): MedTwinState {
+  const today = getTodayIso();
+  const baseHospitalId = user.role === 'hospital_admin' ? `hosp-${user.id.slice(0, 8)}` : 'hosp-independent';
+  const baseDoctorId = user.role === 'doctor' ? user.id : 'doc-unassigned';
+  const linkedPatId = user.linkedPatientId ?? `pat-${user.id.slice(0, 8)}`;
+
+  const patientAge = user.dateOfBirth
+    ? Math.max(
+        1,
+        Math.floor(
+          (Date.now() - new Date(`${user.dateOfBirth}T00:00:00`).getTime()) /
+            (365.25 * 24 * 60 * 60 * 1000),
+        ),
+      )
+    : 35;
+
+  return {
+    hospital: {
+      id: baseHospitalId,
+      name: user.hospitalName || user.affiliation || 'MedTwin Connected Care Network',
+      city: user.country || 'Primary Region',
+      code: user.registrationDetails ? user.registrationDetails.slice(0, 12).toUpperCase() : 'MT-NET',
+      activeDepartments: ['Primary Care', 'Medication Management'],
+    },
+    doctors:
+      user.role === 'doctor'
+        ? [
+            {
+              id: user.id,
+              name: user.fullName,
+              specialty: user.specialty || 'General Medicine',
+              licenseNumber: user.licenseNumber || 'Pending Review',
+              hospitalId: baseHospitalId,
+              email: user.email,
+            },
+          ]
+        : [],
+    patients:
+      user.role === 'patient'
+        ? [
+            {
+              id: linkedPatId,
+              mrn: `MT-${user.id.slice(-5).toUpperCase()}`,
+              name: user.fullName,
+              age: patientAge,
+              gender: 'Unspecified',
+              hospitalId: baseHospitalId,
+              assignedDoctorId: baseDoctorId,
+              conditions: [],
+              allergies: [],
+              lastReviewDate: today,
+              dadiNaniPreferred: user.preferredLanguage !== 'en',
+              preferredLanguageNote: user.preferredLanguage,
+            },
+          ]
+        : [],
+    caregivers:
+      user.role === 'caregiver'
+        ? [
+            {
+              id: user.id,
+              name: user.fullName,
+              email: user.email,
+              phoneLabel: user.phone || 'Email & in-app notifications',
+            },
+          ]
+        : [],
+    connections: [],
+    familyMedicalHistory: [],
+    medications: [],
+    doseLogs: [],
+    prescriptions: [],
+    alerts: [],
+    history: [],
+    clinicianNotes: [],
+    reports: [],
+    appointments: [],
+    dadiNaniEntries: [],
+    managedUsers:
+      user.role === 'hospital_admin'
+        ? [
+            {
+              id: user.id,
+              name: user.fullName,
+              role: 'hospital_admin',
+              hospitalId: baseHospitalId,
+              email: user.email,
+              active: true,
+            },
+          ]
+        : [],
+    activePatientId: user.role === 'patient' ? linkedPatId : '',
+    activeCaregiverId: user.role === 'caregiver' ? user.id : '',
+    activeDoctorId: user.role === 'doctor' ? user.id : '',
+  };
+}
 
 let idCounter = 0;
 function makeId(prefix: string): string {
@@ -52,15 +161,54 @@ export interface ConfirmPrescriptionInput {
 export interface CreateCaregiverInviteInput {
   patientId: string;
   caregiverName: string;
-  caregiverEmail: string;
+  caregiverEmail?: string;
+  phoneCountryCode?: string;
+  phoneNumber?: string;
+  whatsappSameAsPhone?: boolean;
+  whatsappNumber?: string;
+  preferredLanguage?: CaregiverLanguage;
   relationship: RelationshipLabel;
   contactPriority: 'primary' | 'secondary';
   permissions: CaregiverPermissions;
+  alertPreferences?: Partial<CaregiverAlertPreferences>;
+}
+
+export interface UpdateCaregiverContactInput {
+  connectionId: string;
+  caregiverName?: string;
+  caregiverEmail?: string;
+  phoneCountryCode?: string;
+  phoneNumber?: string;
+  whatsappSameAsPhone?: boolean;
+  whatsappNumber?: string;
+  preferredLanguage?: CaregiverLanguage;
+  relationship?: RelationshipLabel;
+  contactPriority?: 'primary' | 'secondary';
+  permissions?: CaregiverPermissions;
+  alertPreferences?: Partial<CaregiverAlertPreferences>;
+}
+
+export interface RecordAlertEventInput {
+  patientId: string;
+  connectionId?: string;
+  caregiverId?: string;
+  caregiverName?: string;
+  alertType: CareAlertType;
+  channel: CareAlertChannel;
+  recipientPhone?: string;
+  title: string;
+  reason: string;
+  messageBody: string;
+  severity?: 'attention' | 'urgent';
+  deliveryState: AlertDeliveryState;
+  simulated?: boolean;
+  actorName?: string;
+  actorRole?: WorkspaceRole | 'system';
 }
 
 export interface IMedTwinService {
-  loadState(): MedTwinState;
-  saveState(state: MedTwinState): void;
+  loadState(storageKey?: string, fallbackBuilder?: () => MedTwinState): MedTwinState;
+  saveState(state: MedTwinState, storageKey?: string): void;
   resetDemoState(): MedTwinState;
   logDose(state: MedTwinState, input: LogDoseInput): MedTwinState;
   undoDose(state: MedTwinState, logId: string, actorName: string): MedTwinState;
@@ -86,11 +234,16 @@ export interface IMedTwinService {
     input: {
       patientId: string;
       caregiverId?: string;
+      alertType?: CareAlertType;
+      channel?: CareAlertChannel;
+      recipientPhone?: string;
+      messageBody?: string;
       title: string;
       reason: string;
       severity: 'attention' | 'urgent';
     },
   ): MedTwinState;
+  recordAlertEvent(state: MedTwinState, input: RecordAlertEventInput): MedTwinState;
   acknowledgeAlert(
     state: MedTwinState,
     alertId: string,
@@ -98,6 +251,12 @@ export interface IMedTwinService {
     followUpNote?: string,
   ): MedTwinState;
   inviteCaregiver(state: MedTwinState, input: CreateCaregiverInviteInput): MedTwinState;
+  updateCaregiverContact(state: MedTwinState, input: UpdateCaregiverContactInput): MedTwinState;
+  removeCaregiverContact(
+    state: MedTwinState,
+    connectionId: string,
+    actorName?: string,
+  ): MedTwinState;
   respondCaregiverInvite(
     state: MedTwinState,
     connectionId: string,
@@ -142,12 +301,13 @@ export interface IMedTwinService {
 }
 
 export const demoMedTwinService: IMedTwinService = {
-  loadState(): MedTwinState {
+  loadState(storageKey = activeStorageKey, fallbackBuilder = buildSeedState): MedTwinState {
+    activeStorageKey = storageKey;
     try {
-      const raw = window.localStorage.getItem(DEMO_STORAGE_KEY);
+      const raw = window.localStorage.getItem(storageKey);
       if (!raw) {
-        const fresh = buildSeedState();
-        window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(fresh));
+        const fresh = fallbackBuilder();
+        window.localStorage.setItem(storageKey, JSON.stringify(fresh));
         return fresh;
       }
       const parsed = JSON.parse(raw) as MedTwinState;
@@ -160,13 +320,13 @@ export const demoMedTwinService: IMedTwinService = {
         clinicianNotes: dedupeById(parsed.clinicianNotes ?? []),
       };
     } catch {
-      return buildSeedState();
+      return fallbackBuilder();
     }
   },
 
-  saveState(state: MedTwinState): void {
+  saveState(state: MedTwinState, storageKey = activeStorageKey): void {
     try {
-      window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
+      window.localStorage.setItem(storageKey, JSON.stringify(state));
     } catch {
       // Ignore quota errors in restricted sandboxes
     }
@@ -174,7 +334,7 @@ export const demoMedTwinService: IMedTwinService = {
 
   resetDemoState(): MedTwinState {
     const fresh = buildSeedState();
-    this.saveState(fresh);
+    this.saveState(fresh, DEMO_STORAGE_KEY);
     return fresh;
   },
 
@@ -444,6 +604,10 @@ export const demoMedTwinService: IMedTwinService = {
     input: {
       patientId: string;
       caregiverId?: string;
+      alertType?: CareAlertType;
+      channel?: CareAlertChannel;
+      recipientPhone?: string;
+      messageBody?: string;
       title: string;
       reason: string;
       severity: 'attention' | 'urgent';
@@ -462,16 +626,28 @@ export const demoMedTwinService: IMedTwinService = {
       return state;
     }
 
+    const channelKind = input.channel ?? 'whatsapp';
+    const recipientPhone =
+      input.recipientPhone ||
+      (acceptedConn.phoneNumber
+        ? `${acceptedConn.phoneCountryCode || '+1'} ${acceptedConn.whatsappSameAsPhone === false ? acceptedConn.whatsappNumber || acceptedConn.phoneNumber : acceptedConn.phoneNumber}`
+        : undefined);
+
     const newAlert: CareAlert = {
       id: makeId('alert'),
       patientId: input.patientId,
       caregiverId: acceptedConn.caregiverId,
+      caregiverName: acceptedConn.caregiverName,
+      alertType: input.alertType ?? 'repeated_missed_doses',
+      channel: channelKind,
+      recipientPhone,
+      messageBody: input.messageBody,
       title: input.title,
       reason: input.reason,
       severity: input.severity,
       deliveryState: 'sent',
       simulated: true,
-      channelLabel: `Simulated notification to ${acceptedConn.caregiverName}`,
+      channelLabel: `${channelKind === 'whatsapp' ? 'WhatsApp' : channelKind === 'sms' ? 'SMS' : 'In-App'} (Simulated) to ${acceptedConn.caregiverName}`,
       createdAt: nowIso,
     };
 
@@ -484,6 +660,78 @@ export const demoMedTwinService: IMedTwinService = {
         details: `${input.title} · Recipient: ${acceptedConn.caregiverName}`,
         actorName: 'MedTwin Alert Engine (Simulated)',
         actorRole: 'system' as const,
+        timestamp: nowIso,
+        sourceId: newAlert.id,
+      },
+      ...state.history,
+    ];
+
+    const updated: MedTwinState = {
+      ...state,
+      alerts: [newAlert, ...state.alerts],
+      history: nextHistory,
+    };
+    this.saveState(updated);
+    return updated;
+  },
+
+  recordAlertEvent(state: MedTwinState, input: RecordAlertEventInput): MedTwinState {
+    const nowIso = new Date().toISOString();
+    const conn =
+      (input.connectionId ? state.connections.find((c) => c.id === input.connectionId) : undefined) ??
+      (input.caregiverId
+        ? state.connections.find(
+            (c) => c.patientId === input.patientId && c.caregiverId === input.caregiverId,
+          )
+        : undefined);
+
+    const recipientName = conn?.caregiverName || input.caregiverName || 'Caregiver';
+    const isSimulated = Boolean(input.simulated);
+    const channelPrefix =
+      input.channel === 'whatsapp'
+        ? `WhatsApp${isSimulated ? ' (Simulated)' : ''} to ${recipientName}`
+        : input.channel === 'sms'
+          ? `SMS${isSimulated ? ' (Simulated)' : ''} to ${recipientName}`
+          : `In-App${isSimulated ? ' (Simulated)' : ''} to ${recipientName}`;
+
+    const newAlert: CareAlert = {
+      id: makeId('alert'),
+      patientId: input.patientId,
+      caregiverId: conn?.caregiverId || input.caregiverId,
+      caregiverName: recipientName,
+      alertType: input.alertType,
+      channel: input.channel,
+      recipientPhone: input.recipientPhone,
+      messageBody: input.messageBody,
+      providerConfirmed: false,
+      title: input.title,
+      reason: input.reason,
+      severity: input.severity ?? 'attention',
+      deliveryState: input.deliveryState,
+      simulated: isSimulated,
+      channelLabel:
+        input.deliveryState === 'opened_messaging_app'
+          ? `${channelPrefix} · Opened Messaging App`
+          : input.deliveryState === 'draft'
+            ? `${channelPrefix} · Draft`
+            : channelPrefix,
+      createdAt: nowIso,
+    };
+
+    const nextHistory = [
+      {
+        id: makeId('hist'),
+        patientId: input.patientId,
+        category: 'caregiver_alert' as const,
+        title:
+          input.deliveryState === 'opened_messaging_app'
+            ? `Opened ${input.channel.toUpperCase()} message to ${recipientName}`
+            : input.deliveryState === 'draft'
+              ? `Saved ${input.channel.toUpperCase()} alert draft for ${recipientName}`
+              : `Logged ${input.channel.toUpperCase()} alert for ${recipientName}`,
+        details: input.title,
+        actorName: input.actorName || 'Patient',
+        actorRole: input.actorRole || 'patient',
         timestamp: nowIso,
         sourceId: newAlert.id,
       },
@@ -547,41 +795,211 @@ export const demoMedTwinService: IMedTwinService = {
 
   inviteCaregiver(state: MedTwinState, input: CreateCaregiverInviteInput): MedTwinState {
     const nowIso = new Date().toISOString();
-    let caregiver = state.caregivers.find(
-      (c) => c.email.toLowerCase() === input.caregiverEmail.toLowerCase(),
-    );
+    const emailClean = (input.caregiverEmail || '').trim().toLowerCase();
+    const phoneNum = (input.phoneNumber || '').trim();
+    const countryCode = (input.phoneCountryCode || '+1').trim();
+    const sameAsPhone = input.whatsappSameAsPhone !== false;
+    const whatsappNum = sameAsPhone ? phoneNum : (input.whatsappNumber || phoneNum).trim();
+    const prefLang = input.preferredLanguage ?? 'en';
+
+    let caregiver = emailClean
+      ? state.caregivers.find((c) => c.email.toLowerCase() === emailClean)
+      : undefined;
+
+    const fullPhoneLabel = phoneNum ? `${countryCode} ${phoneNum}` : emailClean || 'Contact on file';
     const nextCaregivers = [...state.caregivers];
     if (!caregiver) {
       caregiver = {
         id: makeId('cg'),
         name: input.caregiverName,
-        email: input.caregiverEmail,
-        phoneLabel: 'Simulated Notification Channel',
+        email: emailClean,
+        phoneLabel: fullPhoneLabel,
+        phoneCountryCode: countryCode,
+        phoneNumber: phoneNum || undefined,
+        whatsappSameAsPhone: sameAsPhone,
+        whatsappNumber: whatsappNum || undefined,
+        preferredLanguage: prefLang,
       };
       nextCaregivers.push(caregiver);
     }
+
+    const prefs: CaregiverAlertPreferences = {
+      repeatedMissedThreshold: input.alertPreferences?.repeatedMissedThreshold ?? 2,
+      notifyOnRefillNeeded:
+        input.alertPreferences?.notifyOnRefillNeeded ?? input.permissions.receiveDoseAlerts,
+      notifyOnDadiNaniShare: input.alertPreferences?.notifyOnDadiNaniShare ?? true,
+      repeatedMissedDoses: input.alertPreferences?.repeatedMissedDoses ?? true,
+      supplyRunningLow: input.alertPreferences?.supplyRunningLow ?? true,
+      upcomingRefillDate: input.alertPreferences?.upcomingRefillDate ?? true,
+      caregiverInvitation: input.alertPreferences?.caregiverInvitation ?? true,
+      patientRequestedAssistance: input.alertPreferences?.patientRequestedAssistance ?? true,
+    };
 
     const newConn: CaregiverConnection = {
       id: makeId('conn'),
       patientId: input.patientId,
       caregiverId: caregiver.id,
-      caregiverName: caregiver.name,
+      caregiverName: input.caregiverName.trim(),
+      caregiverEmail: emailClean || undefined,
+      phoneCountryCode: countryCode,
+      phoneNumber: phoneNum || undefined,
+      whatsappSameAsPhone: sameAsPhone,
+      whatsappNumber: whatsappNum || undefined,
+      preferredLanguage: prefLang,
       relationship: input.relationship,
       contactPriority: input.contactPriority,
       status: 'invited',
+      requestedBy: 'patient',
       permissions: input.permissions,
-      alertPreferences: {
-        repeatedMissedThreshold: 2,
-        notifyOnRefillNeeded: input.permissions.receiveDoseAlerts,
-        notifyOnDadiNaniShare: true,
-      },
+      alertPreferences: prefs,
       invitedAt: nowIso.slice(0, 10),
     };
+
+    const pat = state.patients.find((p) => p.id === input.patientId);
+    const inviteAlert: CareAlert = {
+      id: makeId('alert'),
+      patientId: input.patientId,
+      caregiverId: caregiver.id,
+      caregiverName: newConn.caregiverName,
+      alertType: 'caregiver_invitation',
+      channel: 'whatsapp',
+      recipientPhone: phoneNum ? `${countryCode} ${whatsappNum}` : undefined,
+      title: `Caregiver invitation created for ${newConn.caregiverName}`,
+      reason: `Pending caregiver acceptance (${input.relationship}). Consent privacy active until accepted.`,
+      severity: 'attention',
+      deliveryState: 'draft',
+      simulated: true,
+      channelLabel: `Invitation Draft for ${newConn.caregiverName}`,
+      createdAt: nowIso,
+    };
+
+    const nextHistory = [
+      {
+        id: makeId('hist'),
+        patientId: input.patientId,
+        category: 'caregiver_alert' as const,
+        title: `Added caregiver contact: ${newConn.caregiverName}`,
+        details: `${input.relationship} (${fullPhoneLabel}) invited for ${pat?.name ?? 'patient'}.`,
+        actorName: pat?.name ?? 'Patient',
+        actorRole: 'patient' as const,
+        timestamp: nowIso,
+        sourceId: inviteAlert.id,
+      },
+      ...state.history,
+    ];
 
     const updated: MedTwinState = {
       ...state,
       caregivers: nextCaregivers,
       connections: [newConn, ...state.connections],
+      alerts: [inviteAlert, ...state.alerts],
+      history: nextHistory,
+    };
+    this.saveState(updated);
+    return updated;
+  },
+
+  updateCaregiverContact(state: MedTwinState, input: UpdateCaregiverContactInput): MedTwinState {
+    const target = state.connections.find((c) => c.id === input.connectionId);
+    if (!target) return state;
+
+    const nextPhoneCountryCode = input.phoneCountryCode ?? target.phoneCountryCode ?? '+1';
+    const nextPhoneNumber =
+      typeof input.phoneNumber === 'string' ? input.phoneNumber.trim() : target.phoneNumber;
+    const nextSameAsPhone =
+      typeof input.whatsappSameAsPhone === 'boolean'
+        ? input.whatsappSameAsPhone
+        : target.whatsappSameAsPhone ?? true;
+    const nextWhatsapp = nextSameAsPhone
+      ? nextPhoneNumber
+      : typeof input.whatsappNumber === 'string'
+        ? input.whatsappNumber.trim()
+        : target.whatsappNumber;
+    const nextName =
+      typeof input.caregiverName === 'string' && input.caregiverName.trim()
+        ? input.caregiverName.trim()
+        : target.caregiverName;
+    const nextEmail =
+      typeof input.caregiverEmail === 'string'
+        ? input.caregiverEmail.trim().toLowerCase() || undefined
+        : target.caregiverEmail;
+    const nextLang = input.preferredLanguage ?? target.preferredLanguage ?? 'en';
+
+    const nextConnections = state.connections.map((c) =>
+      c.id === input.connectionId
+        ? {
+            ...c,
+            caregiverName: nextName,
+            caregiverEmail: nextEmail,
+            phoneCountryCode: nextPhoneCountryCode,
+            phoneNumber: nextPhoneNumber || undefined,
+            whatsappSameAsPhone: nextSameAsPhone,
+            whatsappNumber: nextWhatsapp || undefined,
+            preferredLanguage: nextLang,
+            relationship: input.relationship ?? c.relationship,
+            contactPriority: input.contactPriority ?? c.contactPriority,
+            permissions: input.permissions ?? c.permissions,
+            alertPreferences: input.alertPreferences
+              ? { ...c.alertPreferences, ...input.alertPreferences }
+              : c.alertPreferences,
+          }
+        : c,
+    );
+
+    const nextCaregivers = state.caregivers.map((cg) =>
+      cg.id === target.caregiverId
+        ? {
+            ...cg,
+            name: nextName,
+            email: nextEmail ?? cg.email,
+            phoneCountryCode: nextPhoneCountryCode,
+            phoneNumber: nextPhoneNumber || undefined,
+            whatsappSameAsPhone: nextSameAsPhone,
+            whatsappNumber: nextWhatsapp || undefined,
+            preferredLanguage: nextLang,
+            phoneLabel: nextPhoneNumber
+              ? `${nextPhoneCountryCode} ${nextPhoneNumber}`
+              : cg.phoneLabel,
+          }
+        : cg,
+    );
+
+    const updated: MedTwinState = {
+      ...state,
+      connections: nextConnections,
+      caregivers: nextCaregivers,
+    };
+    this.saveState(updated);
+    return updated;
+  },
+
+  removeCaregiverContact(
+    state: MedTwinState,
+    connectionId: string,
+    actorName = 'Patient',
+  ): MedTwinState {
+    const target = state.connections.find((c) => c.id === connectionId);
+    if (!target) return state;
+
+    const nextConnections = state.connections.filter((c) => c.id !== connectionId);
+    const nextHistory = [
+      {
+        id: makeId('hist'),
+        patientId: target.patientId,
+        category: 'caregiver_alert' as const,
+        title: `Removed caregiver contact: ${target.caregiverName}`,
+        details: `${target.relationship} contact removed and Care Circle data sharing ended.`,
+        actorName,
+        actorRole: 'patient' as const,
+        timestamp: new Date().toISOString(),
+      },
+      ...state.history,
+    ];
+
+    const updated: MedTwinState = {
+      ...state,
+      connections: nextConnections,
+      history: nextHistory,
     };
     this.saveState(updated);
     return updated;
