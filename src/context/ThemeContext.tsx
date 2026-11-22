@@ -20,7 +20,7 @@ function getSystemTheme(): ThemeMode {
 }
 
 function getInitialThemeState(): { theme: ThemeMode; isSystemDefault: boolean } {
-  if (typeof window === 'undefined') return { theme: 'dark', isSystemDefault: false };
+  if (typeof window === 'undefined') return { theme: 'light', isSystemDefault: false };
   try {
     const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
     if (saved === 'light' || saved === 'dark') {
@@ -29,7 +29,7 @@ function getInitialThemeState(): { theme: ThemeMode; isSystemDefault: boolean } 
   } catch {
     // Ignore storage access errors
   }
-  return { theme: 'dark', isSystemDefault: false };
+  return { theme: 'light', isSystemDefault: false };
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

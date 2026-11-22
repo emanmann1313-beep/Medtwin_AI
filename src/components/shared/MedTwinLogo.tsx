@@ -21,30 +21,30 @@ export function MedTwinLogo({
         aria-hidden="true"
         className="shrink-0"
       >
-        {/* Minimalist interlocking twin rings symbolizing patient & care-team digital twin */}
+        {/* Interlocking twin rings symbolizing patient & care-team digital twin */}
         <circle
           cx="11"
           cy="14"
           r="7.25"
-          className="stroke-[#172554] dark:stroke-[#F8FAFC]"
-          strokeWidth="1.75"
+          className="stroke-[#7956C8] dark:stroke-[#A58AE8]"
+          strokeWidth="1.85"
         />
         <circle
           cx="17"
           cy="14"
           r="7.25"
-          className="stroke-[#0D9488] dark:stroke-[#14B8A6]"
-          strokeWidth="1.75"
+          className="stroke-[#24A99B] dark:stroke-[#2DD4BF]"
+          strokeWidth="1.85"
         />
         <circle
           cx="14"
           cy="14"
-          r="1.75"
-          className="fill-[#0D9488] dark:fill-[#14B8A6]"
+          r="1.9"
+          className="fill-[#20243A] dark:fill-[#F7F5F0]"
         />
       </svg>
       {showWordmark && (
-        <span className="font-display text-[17px] font-semibold tracking-tight text-[#172554] dark:text-[#F8FAFC]">
+        <span className="font-display text-[17px] font-semibold tracking-tight text-[#20243A] dark:text-[#F7F5F0]">
           MedTwin AI
         </span>
       )}

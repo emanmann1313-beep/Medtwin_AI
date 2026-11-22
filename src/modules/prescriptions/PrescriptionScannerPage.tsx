@@ -2,7 +2,9 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
+  Camera,
   CheckCircle2,
+  Download,
   FileText,
   Loader2,
   Plus,
@@ -10,6 +12,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
+import { useAuth } from '@/src/context/AuthContext';
 import { useMedTwin } from '@/src/context/MedTwinContext';
 import { SAMPLE_PRESCRIPTION_IMAGE_URL } from '@/src/data/seedData';
 import { extractPrescriptionWithAi } from '@/src/services/aiService';
@@ -17,6 +20,13 @@ import { PrescriptionExtractedItem } from '@/src/types/medtwin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/src/components/ui/dialog';
 import { cn, formatTimestamp } from '@/src/lib/utils';
 
 type ScanStep = 'upload' | 'preview' | 'review' | 'confirmed';
@@ -39,9 +49,17 @@ function parseTimesFromFrequency(freq: string): string[] {
 }
 
 export function PrescriptionScannerPage() {
-  const { state, activePatient, confirmPrescription } = useMedTwin();
+  const { isDemoMode } = useAuth();
+  const { state, isRealAccountMode, activePatient, confirmPrescription } = useMedTwin();
   const navigate = useNavigate();
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraFileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   const [step, setStep] = useState<ScanStep>('upload');
   const [selectedFile, setSelectedFile] = useState<{
@@ -67,6 +85,61 @@ export function PrescriptionScannerPage() {
     () => state.prescriptions.filter((p) => p.patientId === activePatient.id),
     [activePatient.id, state.prescriptions],
   );
+
+  const stopCameraStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const openCameraCapture = async () => {
+    setCameraError(null);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      cameraFileInputRef.current?.click();
+      return;
+    }
+    setCameraModalOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: false,
+      });
+      streamRef.current = stream;
+      window.setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 60);
+    } catch {
+      setCameraError(
+        'Live camera access was denied or unavailable. You can still use "Choose photo / camera file" below.',
+      );
+    }
+  };
+
+  const capturePhotoFromVideo = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : '';
+    stopCameraStream();
+    setCameraModalOpen(false);
+    setSelectedFile({
+      name: `camera_rx_${new Date().toISOString().slice(0, 10)}.jpg`,
+      mimeType: 'image/jpeg',
+      previewUrl: dataUrl,
+      base64Data: base64,
+      isSampleDemo: false,
+    });
+    setStep('preview');
+  };
 
   const handleFileChange = (file: File | undefined) => {
     setValidationError(null);
@@ -105,7 +178,7 @@ export function PrescriptionScannerPage() {
     setValidationError(null);
     setExtractError(null);
     setSelectedFile({
-      name: 'elena_vance_sample_rx.jpg',
+      name: 'sample_prescription_rx.jpg',
       mimeType: 'image/jpeg',
       previewUrl: SAMPLE_PRESCRIPTION_IMAGE_URL,
       isSampleDemo: true,
@@ -116,7 +189,7 @@ export function PrescriptionScannerPage() {
   const populateSimulatedSampleFields = () => {
     setExtractionSource('simulated-sample');
     setPrescriberName('Dr. Ananya Rao, MD');
-    setClinicName('Oakridge / Mercy Crest Medical Clinic');
+    setClinicName('Oakridge Medical Clinic');
     setPrescriptionDate('2026-11-18');
     setItems([
       {
@@ -227,8 +300,6 @@ export function PrescriptionScannerPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Extraction service unavailable.';
       setExtractError(msg);
-      // Do NOT claim to have read an arbitrary uploaded file!
-      // Only allow explicitly labeled simulated extraction for the demo sample prescription.
     } finally {
       setExtractLoading(false);
     }
@@ -279,7 +350,7 @@ export function PrescriptionScannerPage() {
     );
 
   const handleConfirmSchedule = () => {
-    if (!selectedFile || hasInvalidRequiredFields || !confirmChecked) return;
+    if (!selectedFile || hasInvalidRequiredFields || !confirmChecked || !activePatient.id) return;
     confirmPrescription({
       patientId: activePatient.id,
       prescription: {
@@ -296,6 +367,37 @@ export function PrescriptionScannerPage() {
     setStep('confirmed');
   };
 
+  const handleDownloadReport = () => {
+    const lines = [
+      'MEDTWIN AI — VERIFIED PRESCRIPTION SUMMARY REPORT',
+      `Generated: ${new Date().toISOString()}`,
+      `Patient: ${activePatient.name} (${activePatient.mrn})`,
+      `File: ${selectedFile?.name ?? 'Prescription'}`,
+      `Prescriber: ${prescriberName || 'Not specified'}`,
+      `Clinic: ${clinicName || 'Not specified'}`,
+      `Prescription Date: ${prescriptionDate || 'Not specified'}`,
+      `Extraction Source: ${extractionSource}`,
+      '',
+      'MEDICATIONS:',
+      ...items.map(
+        (it, i) =>
+          `${i + 1}. ${it.medicineName} ${it.strength} | Dose: ${it.doseAndRoute} | Frequency: ${it.frequency} (${it.scheduledTimes.join(', ')}) | Duration: ${it.durationDays ?? 30} days | Qty: ${it.quantity ?? 'N/A'}\n   Instructions: ${it.instructions}`,
+      ),
+      '',
+      'Disclaimer: Verify all medication schedules against your original signed prescription or pharmacist label.',
+    ];
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MedTwin_Prescription_Report_${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Progress Stepper */}
@@ -305,10 +407,10 @@ export function PrescriptionScannerPage() {
             <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
               {(
                 [
-                  { id: 'upload', label: '1. Upload' },
+                  { id: 'upload', label: '1. Upload / Camera' },
                   { id: 'preview', label: '2. Preview & Extract' },
-                  { id: 'review', label: '3. Review & Correct' },
-                  { id: 'confirmed', label: '4. Schedule Active' },
+                  { id: 'review', label: '3. Verify Fields' },
+                  { id: 'confirmed', label: '4. Added to Schedule' },
                 ] as const
               ).map((s, idx) => (
                 <React.Fragment key={s.id}>
@@ -316,43 +418,43 @@ export function PrescriptionScannerPage() {
                     className={cn(
                       'px-2.5 py-1 rounded-lg',
                       step === s.id
-                        ? 'bg-[#0D9488] text-white font-semibold dark:bg-[#14B8A6] dark:text-[#0B1220]'
-                        : 'text-[#64748B] bg-[#F8FAFC] border border-[#E2E8F0] dark:text-[#94A3B8] dark:bg-[#0B1220] dark:border-[#334155]',
+                        ? 'bg-[#7956C8] text-white font-semibold dark:bg-[#A58AE8] dark:text-[#101322]'
+                        : 'text-[#5C627D] bg-[#FAF8F5] border border-[#E6E0D8] dark:text-[#A3A9C2] dark:bg-[#101322] dark:border-[#2B314D]',
                     )}
                   >
                     {s.label}
                   </span>
-                  {idx < 3 && <span className="text-[#CBD5E1] dark:text-[#475569]">/</span>}
+                  {idx < 3 && <span className="text-[#D8C5E8] dark:text-[#2B314D]">/</span>}
                 </React.Fragment>
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            {isDemoMode && !isRealAccountMode && (
               <Button type="button" variant="outline" size="sm" onClick={handleLoadSamplePrescription}>
                 Load sample prescription
               </Button>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Step 1: Upload */}
+      {/* Step 1: Upload / Camera / PDF */}
       {step === 'upload' && (
         <Card>
           <CardHeader>
-            <CardTitle>Upload a prescription for {activePatient.name}</CardTitle>
+            <CardTitle>Scan or upload a prescription for {activePatient.name}</CardTitle>
             <CardDescription>
-              Select a prescription image (JPG, PNG, WebP) or PDF up to 10 MB, or load our demo sample.
+              Upload a prescription image (JPG, PNG, WebP), take a photo with your camera, or upload a PDF up to 10 MB.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#CBD5E1] bg-[#F8FAFC] px-6 py-12 text-center dark:border-[#334155] dark:bg-[#0B1220]">
-              <Upload className="h-9 w-9 text-[#0D9488] dark:text-[#14B8A6]" />
-              <p className="mt-3 text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
-                Choose a prescription photo or PDF
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#D8C5E8] bg-[#FAF8F5] px-6 py-12 text-center dark:border-[#2B314D] dark:bg-[#101322]">
+              <Upload className="h-9 w-9 text-[#7956C8] dark:text-[#A58AE8]" />
+              <p className="mt-3 text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                Upload image, take a photo, or choose a PDF
               </p>
-              <p className="mt-1 text-xs text-[#64748B] dark:text-[#94A3B8]">
-                Unclear fields are always highlighted for your confirmation before any schedule is created.
+              <p className="mt-1 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                Gemini AI extracts medication fields and highlights unclear text for your verification before saving.
               </p>
               <input
                 ref={fileInputRef}
@@ -361,15 +463,29 @@ export function PrescriptionScannerPage() {
                 className="hidden"
                 onChange={(e) => handleFileChange(e.target.files?.[0])}
               />
+              <input
+                ref={cameraFileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => handleFileChange(e.target.files?.[0])}
+              />
               <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
                 <Button type="button" onClick={() => fileInputRef.current?.click()}>
                   <Upload className="h-4 w-4" />
-                  <span>Select file</span>
+                  <span>Upload Image / PDF</span>
                 </Button>
-                <Button type="button" variant="outline" onClick={handleLoadSamplePrescription}>
-                  <FileText className="h-4 w-4" />
-                  <span>Load sample prescription</span>
+                <Button type="button" variant="secondary" onClick={openCameraCapture}>
+                  <Camera className="h-4 w-4" />
+                  <span>Use Camera</span>
                 </Button>
+                {isDemoMode && !isRealAccountMode && (
+                  <Button type="button" variant="outline" onClick={handleLoadSamplePrescription}>
+                    <FileText className="h-4 w-4" />
+                    <span>Load Sample Rx</span>
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -383,24 +499,23 @@ export function PrescriptionScannerPage() {
         </Card>
       )}
 
-      {/* Step 2 & 3: Side-by-side Original Prescription + Extraction / Review */}
+      {/* Step 2 & 3: Preview + Editable Verification */}
       {(step === 'preview' || step === 'review') && selectedFile && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-          {/* Left: Original Prescription Preview */}
           <Card className="lg:col-span-5">
             <CardHeader>
-              <CardTitle>Original prescription</CardTitle>
+              <CardTitle>Prescription Preview</CardTitle>
               <CardDescription className="truncate">{selectedFile.name}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {selectedFile.mimeType === 'application/pdf' ? (
-                <div className="flex flex-col items-center justify-center rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-10 text-center dark:border-[#334155] dark:bg-[#0B1220]">
-                  <FileText className="h-10 w-10 text-[#64748B] dark:text-[#94A3B8]" />
-                  <p className="mt-2 text-sm font-medium text-[#172554] dark:text-[#F8FAFC]">{selectedFile.name}</p>
-                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">PDF document ready for extraction</p>
+                <div className="flex flex-col items-center justify-center rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-10 text-center dark:border-[#2B314D] dark:bg-[#101322]">
+                  <FileText className="h-10 w-10 text-[#7956C8] dark:text-[#A58AE8]" />
+                  <p className="mt-2 text-sm font-medium">{selectedFile.name}</p>
+                  <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">PDF ready for AI extraction</p>
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] dark:border-[#334155] dark:bg-[#0B1220]">
+                <div className="overflow-hidden rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] dark:border-[#2B314D] dark:bg-[#101322]">
                   <img
                     src={selectedFile.previewUrl}
                     alt={`Uploaded prescription ${selectedFile.name}`}
@@ -428,7 +543,7 @@ export function PrescriptionScannerPage() {
                     {extractLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Extracting fields...</span>
+                        <span>Extracting with AI...</span>
                       </>
                     ) : (
                       <span>Extract prescription fields</span>
@@ -439,31 +554,28 @@ export function PrescriptionScannerPage() {
             </CardContent>
           </Card>
 
-          {/* Right: Extraction Status or Editable Review Form */}
           <Card className="lg:col-span-7">
             <CardHeader>
               <CardTitle>
-                {step === 'preview' ? 'Extract structured fields' : 'Review & correct extracted fields'}
+                {step === 'preview' ? 'AI OCR Extraction' : 'Verify & Edit Extracted Fields'}
               </CardTitle>
               <CardDescription>
-                {extractionSource === 'simulated-sample'
-                  ? 'Simulated sample extraction active — verify every field before confirming.'
-                  : extractionSource === 'live-ai'
-                    ? 'AI extraction complete — unclear or missing fields are highlighted for verification.'
-                    : 'Run extraction or enter prescription details manually.'}
+                {extractionSource === 'live-ai'
+                  ? 'AI extraction complete. Please verify medicine name, dosage, frequency, duration, and instructions before saving.'
+                  : 'Run AI extraction or verify fields carefully before adding to your schedule.'}
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-5">
               {step === 'preview' && (
                 <div className="space-y-4">
-                  {extractError && (
+                  {extractError ? (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 space-y-2 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
                       <div className="flex items-start gap-2">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                         <div>
-                          <p className="font-semibold">Extraction API unavailable</p>
-                          <p className="mt-0.5 text-amber-800 dark:text-amber-300">{extractError}</p>
+                          <p className="font-semibold">Extraction issue</p>
+                          <p className="mt-0.5">{extractError}</p>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2 pt-1">
@@ -472,12 +584,7 @@ export function PrescriptionScannerPage() {
                           <span>Retry extraction</span>
                         </Button>
                         {selectedFile.isSampleDemo ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="amber"
-                            onClick={populateSimulatedSampleFields}
-                          >
+                          <Button type="button" size="sm" variant="amber" onClick={populateSimulatedSampleFields}>
                             Use simulated sample extraction
                           </Button>
                         ) : (
@@ -496,27 +603,24 @@ export function PrescriptionScannerPage() {
                         )}
                       </div>
                     </div>
-                  )}
-
-                  {!extractError && (
-                    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-5 space-y-3 dark:border-[#334155] dark:bg-[#0B1220]">
-                      <p className="text-sm text-[#172554] dark:text-[#F8FAFC]">
-                        Click <strong>Extract prescription fields</strong> to read visible medicine names,
-                        strengths, dose instructions, and prescriber details.
+                  ) : (
+                    <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-5 space-y-3 dark:border-[#2B314D] dark:bg-[#101322]">
+                      <p className="text-sm">
+                        Click <strong>Extract prescription fields</strong> to read medicine names, dosages, frequencies, durations, and instructions.
                       </p>
-                      {selectedFile.isSampleDemo && (
-                        <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
-                          Demo note: If live extraction is not configured, you can run{' '}
-                          <button
-                            type="button"
-                            onClick={populateSimulatedSampleFields}
-                            className="font-semibold text-[#0D9488] underline cursor-pointer dark:text-[#14B8A6]"
-                          >
-                            Simulated sample extraction
-                          </button>{' '}
-                          on this sample prescription.
-                        </p>
-                      )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setExtractionSource('manual');
+                          setItems([]);
+                          addBlankMedication();
+                          setStep('review');
+                        }}
+                      >
+                        Enter fields manually instead
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -524,16 +628,10 @@ export function PrescriptionScannerPage() {
 
               {step === 'review' && (
                 <div className="space-y-5">
-                  {extractionSource === 'simulated-sample' && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
-                      <strong>Simulated extraction:</strong> Loaded pre-parsed fields for the demo sample prescription. Please review and confirm.
-                    </div>
-                  )}
-
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <div>
-                      <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
-                        Prescriber (if present)
+                      <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                        Prescriber
                       </label>
                       <Input
                         value={prescriberName}
@@ -542,7 +640,7 @@ export function PrescriptionScannerPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
+                      <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
                         Clinic / Hospital
                       </label>
                       <Input
@@ -552,7 +650,7 @@ export function PrescriptionScannerPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
+                      <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
                         Prescription date
                       </label>
                       <Input
@@ -565,9 +663,7 @@ export function PrescriptionScannerPage() {
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
-                        Extracted medications ({items.length})
-                      </h4>
+                      <h4 className="text-sm font-semibold">Extracted medications ({items.length})</h4>
                       <Button type="button" variant="outline" size="sm" onClick={addBlankMedication}>
                         <Plus className="h-3.5 w-3.5" />
                         <span>Add medicine</span>
@@ -587,27 +683,23 @@ export function PrescriptionScannerPage() {
                             'rounded-xl border p-4 space-y-3',
                             hasUnclear
                               ? 'border-amber-300 bg-amber-50/30 dark:border-amber-700/60 dark:bg-amber-950/20'
-                              : 'border-[#E2E8F0] bg-[#FFFFFF] dark:border-[#334155] dark:bg-[#0B1220]',
+                              : 'border-[#E6E0D8] bg-[#FAF8F5] dark:border-[#2B314D] dark:bg-[#101322]',
                           )}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-semibold text-[#172554] dark:text-[#F8FAFC]">
-                              Medication #{idx + 1}
-                            </span>
+                            <span className="text-xs font-semibold">Medication #{idx + 1}</span>
                             <div className="flex items-center gap-3">
                               {hasUnclear && (
                                 <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                                  Needs review: {item.unclearFields.join(', ') || 'missing required field'}
+                                  Needs review: {item.unclearFields.join(', ') || 'missing field'}
                                 </span>
                               )}
                               {items.length > 1 && (
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    setItems((prev) => prev.filter((x) => x.id !== item.id))
-                                  }
+                                  onClick={() => setItems((prev) => prev.filter((x) => x.id !== item.id))}
                                   aria-label="Remove medication row"
-                                  className="text-[#64748B] hover:text-red-600 cursor-pointer dark:text-[#94A3B8] dark:hover:text-red-400"
+                                  className="text-[#5C627D] hover:text-red-600 cursor-pointer"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -617,21 +709,18 @@ export function PrescriptionScannerPage() {
 
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
-                              <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
+                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
                                 Medicine name *
                               </label>
                               <Input
                                 value={item.medicineName}
-                                onChange={(e) =>
-                                  updateItemField(item.id, 'medicineName', e.target.value)
-                                }
-                                className={cn(!item.medicineName.trim() && 'border-amber-400')}
+                                onChange={(e) => updateItemField(item.id, 'medicineName', e.target.value)}
                                 placeholder="Required"
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
-                                Strength
+                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                                Dosage / strength
                               </label>
                               <Input
                                 value={item.strength}
@@ -640,32 +729,27 @@ export function PrescriptionScannerPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
-                                Prescribed dose &amp; route *
+                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                                Dose &amp; route *
                               </label>
                               <Input
                                 value={item.doseAndRoute}
-                                onChange={(e) =>
-                                  updateItemField(item.id, 'doseAndRoute', e.target.value)
-                                }
-                                className={cn(!item.doseAndRoute.trim() && 'border-amber-400')}
+                                onChange={(e) => updateItemField(item.id, 'doseAndRoute', e.target.value)}
                                 placeholder="e.g., 1 tablet oral"
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
+                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
                                 Frequency
                               </label>
                               <Input
                                 value={item.frequency}
-                                onChange={(e) =>
-                                  updateItemField(item.id, 'frequency', e.target.value)
-                                }
+                                onChange={(e) => updateItemField(item.id, 'frequency', e.target.value)}
                                 placeholder="e.g., Twice daily with meals"
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
+                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
                                 Duration (days)
                               </label>
                               <Input
@@ -682,7 +766,7 @@ export function PrescriptionScannerPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
+                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
                                 Quantity dispensed
                               </label>
                               <Input
@@ -701,49 +785,45 @@ export function PrescriptionScannerPage() {
                           </div>
 
                           <div>
-                            <label className="block text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-1">
+                            <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
                               Instructions *
                             </label>
                             <Input
                               value={item.instructions}
-                              onChange={(e) =>
-                                updateItemField(item.id, 'instructions', e.target.value)
-                              }
-                              className={cn(!item.instructions.trim() && 'border-amber-400')}
+                              onChange={(e) => updateItemField(item.id, 'instructions', e.target.value)}
                               placeholder="Confirmed instructions from prescription"
                             />
                           </div>
-
-                          <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8] font-mono">
-                            Scheduled daily times: {item.scheduledTimes.join(', ')}
-                          </p>
                         </div>
                       );
                     })}
                   </div>
 
-                  <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-3 dark:border-[#334155] dark:bg-[#0B1220]">
-                    <label className="flex items-start gap-2.5 text-xs text-[#172554] dark:text-[#F8FAFC] cursor-pointer">
+                  <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 space-y-3 dark:border-[#2B314D] dark:bg-[#101322]">
+                    <label className="flex items-start gap-2.5 text-xs cursor-pointer">
                       <input
                         type="checkbox"
                         checked={confirmChecked}
                         onChange={(e) => setConfirmChecked(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 accent-[#0D9488] dark:accent-[#14B8A6]"
+                        className="mt-0.5 h-4 w-4 accent-[#7956C8]"
                       />
                       <span>
-                        I have reviewed all highlighted fields against the original prescription and confirm these medication schedules are ready to activate for{' '}
-                        <strong>{activePatient.name}</strong>.
+                        I have verified every medicine name, dosage, frequency, duration, and instruction against the original prescription for <strong>{activePatient.name}</strong>.
                       </span>
                     </label>
 
                     <div className="flex flex-wrap justify-end gap-2">
+                      <Button type="button" variant="outline" onClick={handleDownloadReport}>
+                        <Download className="h-4 w-4" />
+                        <span>Download Report</span>
+                      </Button>
                       <Button
                         type="button"
                         onClick={handleConfirmSchedule}
                         disabled={hasInvalidRequiredFields || !confirmChecked}
                       >
                         <CheckCircle2 className="h-4 w-4" />
-                        <span>Confirm &amp; create schedule</span>
+                        <span>Add to Schedule</span>
                       </Button>
                     </div>
                   </div>
@@ -758,32 +838,31 @@ export function PrescriptionScannerPage() {
       {step === 'confirmed' && (
         <Card>
           <CardContent className="py-10 text-center space-y-4">
-            <CheckCircle2 className="mx-auto h-11 w-11 text-[#0D9488] dark:text-[#14B8A6]" />
+            <CheckCircle2 className="mx-auto h-11 w-11 text-[#24A99B] dark:text-[#2DD4BF]" />
             <div>
-              <h3 className="font-display text-xl font-bold text-[#172554] dark:text-[#F8FAFC]">
-                Medication schedule activated
-              </h3>
-              <p className="mt-1 text-sm text-[#64748B] dark:text-[#94A3B8]">
-                Added {items.length} medicine(s) to {activePatient.name}’s schedule and logged to Care History.
+              <h3 className="font-display text-xl font-bold">Added to Medication Schedule</h3>
+              <p className="mt-1 text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+                Activated {items.length} medicine(s) for {activePatient.name} and logged to Care History.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-3">
               <Button type="button" onClick={() => navigate('/medications')}>
-                View active medications
+                View Active Medications
               </Button>
-              <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>
-                Return to dashboard
+              <Button type="button" variant="outline" onClick={handleDownloadReport}>
+                <Download className="h-4 w-4" />
+                <span>Download Report</span>
               </Button>
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 onClick={() => {
                   setStep('upload');
                   setSelectedFile(null);
                   setItems([]);
                 }}
               >
-                Scan another prescription
+                Scan Another Prescription
               </Button>
             </div>
           </CardContent>
@@ -793,31 +872,30 @@ export function PrescriptionScannerPage() {
       {/* Prescription Archive */}
       <Card>
         <CardHeader>
-          <CardTitle>Prescription archive</CardTitle>
-          <CardDescription>Confirmed prescriptions on file for {activePatient.name}</CardDescription>
+          <CardTitle>Prescription Archive</CardTitle>
+          <CardDescription>Confirmed prescriptions saved for {activePatient.name}</CardDescription>
         </CardHeader>
         <CardContent>
           {patientPrescriptions.length === 0 ? (
-            <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">No prescriptions recorded yet.</p>
+            <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+              No prescriptions recorded yet.
+            </p>
           ) : (
-            <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
+            <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
               {patientPrescriptions.map((rx) => (
                 <div
                   key={rx.id}
                   className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
-                    <p className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
+                    <p className="text-sm font-semibold">
                       {rx.fileName} · {rx.items.map((i) => `${i.medicineName} ${i.strength}`).join(', ')}
                     </p>
-                    <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
-                      Prescriber: {rx.prescriberName ?? 'Unspecified'} · Source:{' '}
-                      {rx.extractionSource === 'simulated-sample'
-                        ? 'Simulated sample'
-                        : rx.extractionSource}
+                    <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                      Prescriber: {rx.prescriberName ?? 'Unspecified'} · Source: {rx.extractionSource}
                     </p>
                   </div>
-                  <span className="text-xs font-mono text-[#64748B] dark:text-[#94A3B8] tabular-nums">
+                  <span className="text-xs font-mono text-[#5C627D] dark:text-[#A3A9C2] tabular-nums">
                     {formatTimestamp(rx.confirmedAt ?? rx.createdAt)}
                   </span>
                 </div>
@@ -826,6 +904,65 @@ export function PrescriptionScannerPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Live Camera Capture Dialog */}
+      <Dialog
+        open={cameraModalOpen}
+        onOpenChange={(open) => {
+          if (!open) stopCameraStream();
+          setCameraModalOpen(open);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Capture Prescription Photo</DialogTitle>
+            <DialogDescription>
+              Position the prescription clearly inside the frame and click Capture Photo.
+            </DialogDescription>
+          </DialogHeader>
+          {cameraError ? (
+            <div className="space-y-3">
+              <p className="text-xs text-amber-700 dark:text-amber-300">{cameraError}</p>
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => {
+                  setCameraModalOpen(false);
+                  cameraFileInputRef.current?.click();
+                }}
+              >
+                Choose Photo / Camera File
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full rounded-xl border border-[#E6E0D8] bg-black dark:border-[#2B314D]"
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    stopCameraStream();
+                    setCameraModalOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="button" onClick={capturePhotoFromVideo}>
+                  <Camera className="h-4 w-4" />
+                  <span>Capture Photo</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

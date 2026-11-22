@@ -58,6 +58,7 @@ export interface CaregiverConsentRecord {
   relationship: RelationshipLabel;
   contact_priority: 'primary' | 'secondary';
   status: 'invited' | 'accepted' | 'revoked';
+  requested_by?: 'patient' | 'caregiver';
   scopes: ConsentScope[];
   alert_threshold: number;
   notify_on_refill: boolean;

@@ -6,22 +6,15 @@ import {
   Clock,
   FileScan,
   HeartHandshake,
+  Loader2,
   Pill,
   RotateCcw,
   SkipForward,
+  Sparkles,
   Users,
 } from 'lucide-react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { useAuth } from '@/src/context/AuthContext';
 import { useMedTwin } from '@/src/context/MedTwinContext';
-import { useTheme } from '@/src/context/ThemeContext';
 import {
   buildDoseSlotsForDate,
   buildExplainableAttentionItems,
@@ -29,8 +22,10 @@ import {
   computeRefillForecasts,
   getTodayIso,
 } from '@/src/services/adherenceEngine';
+import { sendAiChatMessage } from '@/src/services/aiService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
+import { ProgressRing } from '@/src/components/ui/ProgressRing';
 import {
   Dialog,
   DialogContent,
@@ -43,19 +38,20 @@ import { AttentionCards } from '@/src/components/shared/AttentionCards';
 import { cn, formatShortDate, formatTime12h, formatTimestamp } from '@/src/lib/utils';
 
 export function PatientDashboardPage() {
+  const { user, isDemoMode } = useAuth();
   const {
     state,
     isLoading,
+    hasPatients,
+    isRealAccountMode,
     activePatient,
     setActivePatientId,
+    setAssistantOpen,
     logDose,
     undoDose,
   } = useMedTwin();
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
-  const [adherenceWindow, setAdherenceWindow] = useState<7 | 30>(7);
   const [skipModalSlot, setSkipModalSlot] = useState<{
     medicationId: string;
     medicationName: string;
@@ -63,71 +59,93 @@ export function PatientDashboardPage() {
     scheduledTime: string;
   } | null>(null);
   const [skipReason, setSkipReason] = useState('');
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [aiInsightLoading, setAiInsightLoading] = useState(false);
 
   const todayStr = getTodayIso();
 
+  const patientMeds = useMemo(
+    () =>
+      hasPatients
+        ? state.medications.filter(
+            (m) => m.patientId === activePatient.id && m.status === 'active',
+          )
+        : [],
+    [activePatient.id, hasPatients, state.medications],
+  );
+
   const todaySlots = useMemo(
     () =>
-      buildDoseSlotsForDate(
-        activePatient.id,
-        todayStr,
-        state.medications,
-        state.doseLogs,
-      ),
-    [activePatient.id, state.doseLogs, state.medications, todayStr],
+      hasPatients
+        ? buildDoseSlotsForDate(
+            activePatient.id,
+            todayStr,
+            state.medications,
+            state.doseLogs,
+          )
+        : [],
+    [activePatient.id, hasPatients, state.doseLogs, state.medications, todayStr],
   );
 
   const metrics7 = useMemo(
-    () => computeAdherenceMetrics(activePatient.id, 7, state.medications, state.doseLogs),
-    [activePatient.id, state.doseLogs, state.medications],
+    () =>
+      hasPatients
+        ? computeAdherenceMetrics(activePatient.id, 7, state.medications, state.doseLogs)
+        : { adherencePct: null, takenCount: 0, scheduledDueCount: 0, skippedCount: 0, unconfirmedCount: 0, dailySeries: [] },
+    [activePatient.id, hasPatients, state.doseLogs, state.medications],
   );
 
   const metrics30 = useMemo(
-    () => computeAdherenceMetrics(activePatient.id, 30, state.medications, state.doseLogs),
-    [activePatient.id, state.doseLogs, state.medications],
+    () =>
+      hasPatients
+        ? computeAdherenceMetrics(activePatient.id, 30, state.medications, state.doseLogs)
+        : { adherencePct: null, takenCount: 0, scheduledDueCount: 0, skippedCount: 0, unconfirmedCount: 0, dailySeries: [] },
+    [activePatient.id, hasPatients, state.doseLogs, state.medications],
   );
 
-  const activeMetrics = adherenceWindow === 7 ? metrics7 : metrics30;
-
   const refillForecasts = useMemo(
-    () => computeRefillForecasts(activePatient.id, state.medications),
-    [activePatient.id, state.medications],
+    () =>
+      hasPatients ? computeRefillForecasts(activePatient.id, state.medications) : [],
+    [activePatient.id, hasPatients, state.medications],
   );
 
   const attentionItems = useMemo(
     () =>
-      buildExplainableAttentionItems(
-        activePatient.id,
-        state.medications,
-        state.doseLogs,
-        state.prescriptions,
-        state.alerts,
-      ),
-    [activePatient.id, state.alerts, state.doseLogs, state.medications, state.prescriptions],
+      hasPatients
+        ? buildExplainableAttentionItems(
+            activePatient.id,
+            state.medications,
+            state.doseLogs,
+            state.prescriptions,
+            state.alerts,
+          )
+        : [],
+    [activePatient.id, hasPatients, state.alerts, state.doseLogs, state.medications, state.prescriptions],
   );
 
   const patientConnections = useMemo(
     () =>
-      state.connections.filter(
-        (c) => c.patientId === activePatient.id && c.status !== 'revoked',
-      ),
-    [activePatient.id, state.connections],
+      hasPatients
+        ? state.connections.filter(
+            (c) => c.patientId === activePatient.id && c.status !== 'revoked',
+          )
+        : [],
+    [activePatient.id, hasPatients, state.connections],
   );
 
   const recentHistory = useMemo(
     () =>
-      state.history
-        .filter((h) => h.patientId === activePatient.id && !h.restrictedToClinician)
-        .slice(0, 6),
-    [activePatient.id, state.history],
+      hasPatients
+        ? state.history
+            .filter((h) => h.patientId === activePatient.id && !h.restrictedToClinician)
+            .slice(0, 6)
+        : [],
+    [activePatient.id, hasPatients, state.history],
   );
 
   const confirmedToday = todaySlots.filter((s) => s.state === 'taken').length;
-  const skippedToday = todaySlots.filter((s) => s.state === 'skipped').length;
-  const unconfirmedDueToday = todaySlots.filter(
-    (s) => s.state === 'overdue' || s.state === 'due',
-  ).length;
-  const approachingRefillCount = refillForecasts.filter((r) => r.needsRefill).length;
+  const todayCompletionPct =
+    todaySlots.length > 0 ? Math.round((confirmedToday / todaySlots.length) * 100) : null;
 
   const nextScheduledSlot = useMemo(
     () =>
@@ -136,18 +154,59 @@ export function PatientDashboardPage() {
     [todaySlots],
   );
 
+  const displayName = isRealAccountMode && user ? user.fullName : activePatient.name;
+
+  const soonestRefill = useMemo(() => {
+    const withDays = refillForecasts.filter((r) => r.daysRemaining !== null);
+    withDays.sort((a, b) => (a.daysRemaining ?? 999) - (b.daysRemaining ?? 999));
+    return withDays[0] ?? null;
+  }, [refillForecasts]);
+
+  const handleGenerateAiInsight = async () => {
+    setAiInsightLoading(true);
+    try {
+      const res = await sendAiChatMessage({
+        message:
+          'Give me a concise 2-sentence overview of today’s medication schedule, refill status, and one helpful adherence tip based strictly on my saved medications.',
+        history: [],
+        patientContext: {
+          patientName: displayName,
+          today: todayStr,
+          medications: patientMeds.map((m) => ({
+            name: m.name,
+            strength: m.strength,
+            remainingQuantity: m.remainingQuantity,
+          })),
+          todaySlots: todaySlots.map((s) => ({
+            medicine: `${s.medication.name} ${s.medication.strength}`,
+            time: formatTime12h(s.scheduledTime),
+            status: s.state,
+          })),
+          adherence7dPct: metrics7.adherencePct,
+          adherence30dPct: metrics30.adherencePct,
+        },
+        role: 'patient',
+      });
+      setAiInsight(res);
+    } catch (err) {
+      setAiInsight(
+        err instanceof Error
+          ? err.message
+          : 'Unable to fetch AI medication insight right now.',
+      );
+    } finally {
+      setAiInsightLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6" aria-busy="true">
-        <div className="h-24 rounded-2xl bg-[#E2E8F0]/70 dark:bg-[#172033] animate-pulse" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 rounded-2xl bg-[#E2E8F0]/70 dark:bg-[#172033] animate-pulse" />
+        <div className="h-24 rounded-2xl bg-[#E6E0D8]/70 dark:bg-[#171B2E] animate-pulse" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-44 rounded-2xl bg-[#E6E0D8]/70 dark:bg-[#171B2E] animate-pulse" />
           ))}
-        </div>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 h-80 rounded-2xl bg-[#E2E8F0]/70 dark:bg-[#172033] animate-pulse" />
-          <div className="h-80 rounded-2xl bg-[#E2E8F0]/70 dark:bg-[#172033] animate-pulse" />
         </div>
       </div>
     );
@@ -155,199 +214,295 @@ export function PatientDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Patient Welcome & Primary Actions */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 lg:flex-row lg:items-center lg:justify-between dark:border-[#334155] dark:bg-[#172033]">
+      {/* Greeting & Quick Actions */}
+      <div className="flex flex-col gap-4 rounded-2xl border border-[#E6E0D8] bg-[#FFFFFF] p-6 lg:flex-row lg:items-center lg:justify-between dark:border-[#2B314D] dark:bg-[#171B2E]">
         <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
-            <span className="font-mono text-[#172554] dark:text-[#F8FAFC]">{activePatient.mrn}</span>
-            <span aria-hidden="true">·</span>
-            <span>Age {activePatient.age}</span>
-            <span aria-hidden="true">·</span>
-            <span>{activePatient.conditions.join(', ')}</span>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+            {hasPatients && (
+              <span className="font-mono font-semibold text-[#7956C8] dark:text-[#A58AE8]">
+                {activePatient.mrn}
+              </span>
+            )}
+            {activePatient.conditions.length > 0 && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{activePatient.conditions.join(', ')}</span>
+              </>
+            )}
+            {isDemoMode && !isRealAccountMode && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>Synthetic Demo Profile</span>
+              </>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="font-display text-2xl font-bold text-[#172554] dark:text-[#F8FAFC]">
-              Welcome back, {activePatient.name}
+            <h2 className="font-display text-2xl font-bold text-[#20243A] dark:text-[#F7F5F0]">
+              Welcome back, {displayName}
             </h2>
-            <select
-              aria-label="Select patient profile"
-              value={activePatient.id}
-              onChange={(e) => setActivePatientId(e.target.value)}
-              className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1.5 text-xs font-medium text-[#172554] focus:outline-none focus:ring-2 focus:ring-[#0D9488] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC] dark:focus:ring-[#14B8A6]"
-            >
-              {state.patients.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.mrn})
-                </option>
-              ))}
-            </select>
+            {isDemoMode && !isRealAccountMode && state.patients.length > 1 && (
+              <select
+                aria-label="Select demo patient profile"
+                value={activePatient.id}
+                onChange={(e) => setActivePatientId(e.target.value)}
+                className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] px-3 py-1.5 text-xs font-medium text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+              >
+                {state.patients.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.mrn})
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
+          <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+            {patientMeds.length === 0
+              ? 'Scan your first prescription to activate your daily medication schedule and Digital Twin.'
+              : `Tracking ${patientMeds.length} active medication(s) for ${formatShortDate(todayStr)}.`}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <Button type="button" onClick={() => navigate('/prescriptions')}>
             <FileScan className="h-4 w-4" />
-            <span>Scan prescription</span>
+            <span>Quick Scan Prescription</span>
           </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/medications')}>
-            <Pill className="h-4 w-4" />
-            <span>View medicines</span>
-          </Button>
-          <Button type="button" variant="secondary" onClick={() => navigate('/digital-twin')}>
+          <Button type="button" variant="outline" onClick={() => navigate('/digital-twin')}>
             <Activity className="h-4 w-4" />
-            <span>Open digital twin</span>
+            <span>Digital Twin</span>
           </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/caregivers')}>
-            <Users className="h-4 w-4" />
-            <span>Manage care circle</span>
+          <Button type="button" variant="secondary" onClick={() => navigate('/dadi-nani')}>
+            <HeartHandshake className="h-4 w-4" />
+            <span>Dadi-Nani Mode</span>
           </Button>
         </div>
       </div>
 
-      {/* Top Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
+      {/* 3 Animated Adherence Progress Rings + Next Scheduled Medicine */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <Card className="lg:col-span-7">
           <CardHeader className="pb-2">
-            <CardDescription>Confirmed doses today</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums">
-              {confirmedToday} / {todaySlots.length}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
-              Scheduled active doses for {formatShortDate(todayStr)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Unconfirmed or skipped today</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums">
-              {unconfirmedDueToday + skippedToday}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-[#64748B] dark:text-[#94A3B8] tabular-nums">
-              {unconfirmedDueToday} unconfirmed due · {skippedToday} skipped
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Recorded adherence (7d / 30d)</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-[#0D9488] dark:text-[#14B8A6]">
-              {metrics7.adherencePct !== null ? `${metrics7.adherencePct}%` : '—'}
-              <span className="ml-2 text-base font-medium text-[#64748B] dark:text-[#94A3B8]">
-                / {metrics30.adherencePct !== null ? `${metrics30.adherencePct}%` : '—'}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-[#64748B] dark:text-[#94A3B8] tabular-nums">
-              {metrics7.takenCount} taken of {metrics7.scheduledDueCount} due in 7d
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Medicines approaching refill</CardDescription>
-            <CardTitle
-              className={cn(
-                'text-3xl font-bold tabular-nums',
-                approachingRefillCount > 0
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-[#172554] dark:text-[#F8FAFC]',
-              )}
-            >
-              {approachingRefillCount}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
-              Within configured refill threshold
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Grid: Today's Medication Timeline (Left 2 cols) + Next Dose & Care Attention (Right 1 col) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-[#E2E8F0] dark:border-[#334155] pb-4">
-            <div>
-              <CardTitle>Today’s medication timeline</CardTitle>
-              <CardDescription>
-                Log taken or skipped doses once; undo is available for accidental entries.
-              </CardDescription>
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/dadi-nani')}>
-              <HeartHandshake className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <span>Share in Dadi-Nani Mode</span>
-            </Button>
+            <CardTitle>Adherence Progress Overview</CardTitle>
+            <CardDescription>
+              Daily completion, 7-day rolling adherence, and 30-day routine consistency
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+              <ProgressRing
+                value={todayCompletionPct}
+                tone="teal"
+                size={132}
+                label="Today’s Completion"
+                sublabel={
+                  todaySlots.length > 0
+                    ? `${confirmedToday} of ${todaySlots.length} doses`
+                    : 'No doses scheduled'
+                }
+              />
+              <ProgressRing
+                value={metrics7.adherencePct}
+                tone="violet"
+                size={132}
+                label="Weekly Adherence"
+                sublabel={
+                  metrics7.scheduledDueCount > 0
+                    ? `${metrics7.takenCount} of ${metrics7.scheduledDueCount} due`
+                    : 'No 7d logs yet'
+                }
+              />
+              <ProgressRing
+                value={metrics30.adherencePct}
+                tone="navy"
+                size={132}
+                label="Monthly Adherence"
+                sublabel={
+                  metrics30.scheduledDueCount > 0
+                    ? `${metrics30.takenCount} of ${metrics30.scheduledDueCount} due`
+                    : 'No 30d logs yet'
+                }
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Next Scheduled Medicine + Caregiver & Refill Snapshot */}
+        <div className="lg:col-span-5 space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Next scheduled medicine</CardDescription>
+              {nextScheduledSlot ? (
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Clock className="h-5 w-5 text-[#7956C8] dark:text-[#A58AE8]" />
+                  <span className="tabular-nums">
+                    {formatTime12h(nextScheduledSlot.scheduledTime)}
+                  </span>
+                </CardTitle>
+              ) : (
+                <CardTitle className="text-lg text-[#24A99B] dark:text-[#2DD4BF]">
+                  {todaySlots.length === 0 ? 'No doses scheduled yet' : 'All doses logged for today'}
+                </CardTitle>
+              )}
+            </CardHeader>
+            <CardContent>
+              {nextScheduledSlot ? (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-bold text-[#20243A] dark:text-[#F7F5F0]">
+                      {nextScheduledSlot.medication.name} {nextScheduledSlot.medication.strength}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                      {nextScheduledSlot.medication.instructions}
+                    </p>
+                  </div>
+                  {!nextScheduledSlot.log && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full"
+                      onClick={() =>
+                        logDose({
+                          patientId: activePatient.id,
+                          medicationId: nextScheduledSlot.medication.id,
+                          scheduledDate: nextScheduledSlot.scheduledDate,
+                          scheduledTime: nextScheduledSlot.scheduledTime,
+                          status: 'taken',
+                        })
+                      }
+                    >
+                      <Check className="h-4 w-4" />
+                      <span>Mark as Taken</span>
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                  {todaySlots.length === 0
+                    ? 'Scan a prescription or add a medicine to begin tracking.'
+                    : 'Every scheduled slot for today has been logged.'}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Refill countdown</CardDescription>
+                <CardTitle className="text-2xl font-bold tabular-nums text-[#20243A] dark:text-[#F7F5F0]">
+                  {soonestRefill && soonestRefill.daysRemaining !== null
+                    ? `${soonestRefill.daysRemaining}d`
+                    : '—'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2] truncate">
+                  {soonestRefill
+                    ? `${soonestRefill.medicationName} remaining`
+                    : 'Add stock count on Rx'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Caregiver circle</CardDescription>
+                <CardTitle className="text-2xl font-bold tabular-nums text-[#24A99B] dark:text-[#2DD4BF]">
+                  {patientConnections.filter((c) => c.status === 'accepted').length}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <button
+                  type="button"
+                  onClick={() => navigate('/caregivers')}
+                  className="text-xs font-semibold text-[#7956C8] hover:underline cursor-pointer dark:text-[#A58AE8]"
+                >
+                  {patientConnections.some((c) => c.status === 'invited')
+                    ? `${patientConnections.filter((c) => c.status === 'invited').length} pending approval`
+                    : 'Manage Care Circle'}
+                </button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Today's Medication Cards + AI Medication Insights */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <Card className="lg:col-span-8">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#E6E0D8] dark:border-[#2B314D] pb-4">
+            <div>
+              <CardTitle>Today’s Medicine Cards &amp; Timeline</CardTitle>
+              <CardDescription>
+                Review dosage, timing, remaining quantity, and confirm each dose with one tap.
+              </CardDescription>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/medications')}>
+              <Pill className="h-4 w-4" />
+              <span>All Medicines</span>
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-5">
             {todaySlots.length === 0 ? (
-              <div className="py-10 text-center">
-                <p className="text-sm font-medium text-[#172554] dark:text-[#F8FAFC]">
-                  No scheduled doses for today.
+              <div className="rounded-2xl border border-dashed border-[#E6E0D8] bg-[#FAF8F5] py-12 px-6 text-center space-y-3 dark:border-[#2B314D] dark:bg-[#101322]">
+                <Pill className="mx-auto h-9 w-9 text-[#7956C8] dark:text-[#A58AE8]" />
+                <p className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                  No scheduled medicines yet for today
                 </p>
-                <p className="mt-1 text-xs text-[#64748B] dark:text-[#94A3B8]">
-                  Scan a prescription or review as-needed medicines to get started.
+                <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2] max-w-md mx-auto">
+                  Upload or photograph a prescription to build your daily medication cards automatically.
                 </p>
+                <Button type="button" onClick={() => navigate('/prescriptions')}>
+                  <FileScan className="h-4 w-4" />
+                  <span>Scan Prescription</span>
+                </Button>
               </div>
             ) : (
-              <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                 {todaySlots.map((slot) => {
-                  const stateLabelMap = {
-                    taken: { text: 'Taken', cls: 'text-[#0D9488] dark:text-[#14B8A6]' },
-                    skipped: { text: 'Skipped', cls: 'text-amber-700 dark:text-amber-400' },
-                    overdue: { text: 'Overdue / Unconfirmed', cls: 'text-red-600 dark:text-red-400' },
-                    due: { text: 'Due now', cls: 'text-[#3B82F6] dark:text-[#60A5FA]' },
-                    scheduled: { text: 'Scheduled', cls: 'text-[#64748B] dark:text-[#94A3B8]' },
-                  } as const;
-                  const meta = stateLabelMap[slot.state];
+                  const statusMeta =
+                    slot.state === 'taken'
+                      ? { label: 'Taken', cls: 'text-[#24A99B] dark:text-[#2DD4BF]' }
+                      : slot.state === 'overdue'
+                        ? { label: 'Missed / Overdue', cls: 'text-red-600 dark:text-red-400' }
+                        : slot.state === 'skipped'
+                          ? { label: 'Skipped', cls: 'text-amber-700 dark:text-amber-400' }
+                          : { label: 'Pending', cls: 'text-[#7956C8] dark:text-[#A58AE8]' };
 
                   return (
                     <div
                       key={slot.slotKey}
-                      className="flex flex-col gap-3 py-4 first:pt-1 last:pb-1 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col justify-between rounded-2xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 space-y-3 dark:border-[#2B314D] dark:bg-[#101322]"
                     >
-                      <div className="flex items-start gap-4 min-w-0">
-                        <div className="w-20 shrink-0 pt-0.5 font-mono text-sm font-semibold text-[#172554] dark:text-[#F8FAFC] tabular-nums">
-                          {formatTime12h(slot.scheduledTime)}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-2 text-xs">
+                          <span className="font-mono font-bold text-[#20243A] dark:text-[#F7F5F0] tabular-nums">
+                            {formatTime12h(slot.scheduledTime)}
+                          </span>
+                          <span className={cn('font-semibold', statusMeta.cls)}>
+                            {statusMeta.label}
+                          </span>
                         </div>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
-                              {slot.medication.name} {slot.medication.strength}
-                            </span>
-                            <span aria-hidden="true" className="text-[#E2E8F0] dark:text-[#334155]">
-                              ·
-                            </span>
-                            <span className={cn('text-xs font-semibold', meta.cls)}>
-                              {meta.text}
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-xs text-[#64748B] dark:text-[#94A3B8]">
-                            {slot.medication.doseAndRoute} — {slot.medication.instructions}
-                          </p>
-                          {slot.log?.skipReason && (
-                            <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                              Skip reason: {slot.log.skipReason}
-                            </p>
-                          )}
-                        </div>
+                        <p className="font-display text-base font-bold text-[#20243A] dark:text-[#F7F5F0]">
+                          {slot.medication.name} {slot.medication.strength}
+                        </p>
+                        <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                          {slot.medication.doseAndRoute} · {slot.medication.instructions}
+                        </p>
+                        <p className="font-mono text-[11px] text-[#5C627D] dark:text-[#A3A9C2] tabular-nums">
+                          {typeof slot.medication.remainingQuantity === 'number'
+                            ? `${slot.medication.remainingQuantity} ${slot.medication.unitLabel} remaining`
+                            : 'Remaining qty not set'}
+                        </p>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 sm:ml-4">
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#E6E0D8] dark:border-[#2B314D]">
                         {!slot.log ? (
                           <>
                             <Button
                               type="button"
                               size="sm"
+                              className="flex-1"
                               onClick={() =>
                                 logDose({
                                   patientId: activePatient.id,
@@ -359,7 +514,7 @@ export function PatientDashboardPage() {
                               }
                             >
                               <Check className="h-3.5 w-3.5" />
-                              <span>Mark taken</span>
+                              <span>Mark as Taken</span>
                             </Button>
                             <Button
                               type="button"
@@ -384,10 +539,11 @@ export function PatientDashboardPage() {
                             type="button"
                             size="sm"
                             variant="outline"
+                            className="w-full"
                             onClick={() => undoDose(slot.log!.id)}
                           >
                             <RotateCcw className="h-3.5 w-3.5" />
-                            <span>Undo</span>
+                            <span>Undo Log</span>
                           </Button>
                         )}
                       </div>
@@ -399,296 +555,158 @@ export function PatientDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Side Column: Next Scheduled Dose + Care Attention */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Next scheduled dose</CardDescription>
-              {nextScheduledSlot ? (
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Clock className="h-5 w-5 text-[#3B82F6] dark:text-[#60A5FA]" />
-                  <span className="tabular-nums">
-                    {formatTime12h(nextScheduledSlot.scheduledTime)}
-                  </span>
-                </CardTitle>
-              ) : (
-                <CardTitle className="text-lg text-[#0D9488] dark:text-[#14B8A6]">
-                  All doses logged today
-                </CardTitle>
-              )}
+        {/* AI Medication Insights + Attention Cards */}
+        <div className="lg:col-span-4 space-y-6">
+          <Card className="border-[#D8C5E8] dark:border-[#2B314D]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Sparkles className="h-4 w-4 text-[#7956C8] dark:text-[#A58AE8]" />
+                <span>AI Medication Insights</span>
+              </CardTitle>
+              <CardDescription>
+                Non-diagnostic summary grounded in your active prescriptions and routine
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              {nextScheduledSlot ? (
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
-                      {nextScheduledSlot.medication.name} {nextScheduledSlot.medication.strength}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[#64748B] dark:text-[#94A3B8]">
-                      {nextScheduledSlot.medication.instructions}
-                    </p>
-                  </div>
-                  {!nextScheduledSlot.log && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="w-full"
-                      onClick={() =>
-                        logDose({
-                          patientId: activePatient.id,
-                          medicationId: nextScheduledSlot.medication.id,
-                          scheduledDate: nextScheduledSlot.scheduledDate,
-                          scheduledTime: nextScheduledSlot.scheduledTime,
-                          status: 'taken',
-                        })
-                      }
-                    >
-                      <Check className="h-4 w-4" />
-                      <span>Confirm next dose taken</span>
-                    </Button>
-                  )}
-                </div>
+            <CardContent className="space-y-3">
+              {aiInsight ? (
+                <p className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-3.5 text-xs leading-relaxed text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]">
+                  {aiInsight}
+                </p>
               ) : (
-                <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
-                  No remaining unlogged doses for today’s schedule.
+                <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                  Generate an instant overview of today’s schedule, upcoming refills, or ask a question in the assistant drawer.
                 </p>
               )}
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleGenerateAiInsight}
+                  disabled={aiInsightLoading}
+                >
+                  {aiInsightLoading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Analyzing schedule...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>{aiInsight ? 'Refresh AI insight' : 'Generate AI insight'}</span>
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAssistantOpen(true)}
+                >
+                  <span>Open AI Chat Assistant</span>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
-              <h3 className="font-display text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
-                Care attention ({attentionItems.length})
+              <h3 className="font-display text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                Care Attention ({attentionItems.length})
               </h3>
-              <span className="text-xs text-[#64748B] dark:text-[#94A3B8]">Explainable triggers</span>
+              <button
+                type="button"
+                onClick={() => navigate('/caregivers')}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#7956C8] hover:underline cursor-pointer dark:text-[#A58AE8]"
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span>Care Circle</span>
+              </button>
             </div>
             <AttentionCards items={attentionItems.slice(0, 3)} />
           </div>
         </div>
       </div>
 
-      {/* Bottom Row: Adherence Chart + Refill Forecast + Caregiver Connections & History */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle>Recorded adherence trend</CardTitle>
-              <CardDescription>
-                Confirmed taken doses divided by scheduled due doses. Missing logs remain distinct from skipped doses.
-              </CardDescription>
-            </div>
-            <div className="inline-flex rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-1 dark:border-[#334155] dark:bg-[#0B1220]">
-              <button
-                type="button"
-                onClick={() => setAdherenceWindow(7)}
-                className={cn(
-                  'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
-                  adherenceWindow === 7
-                    ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
-                    : 'text-[#64748B] hover:text-[#172554] dark:text-[#94A3B8] dark:hover:text-[#F8FAFC]',
-                )}
-              >
-                7 Days
-              </button>
-              <button
-                type="button"
-                onClick={() => setAdherenceWindow(30)}
-                className={cn(
-                  'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
-                  adherenceWindow === 30
-                    ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
-                    : 'text-[#64748B] hover:text-[#172554] dark:text-[#94A3B8] dark:hover:text-[#F8FAFC]',
-                )}
-              >
-                30 Days
-              </button>
-            </div>
+      {/* Refill Countdown List & Recent Care Activity */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Refill Countdown</CardTitle>
+            <CardDescription>Supply estimates based on remaining units and daily frequency</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-[#64748B] dark:text-[#94A3B8] tabular-nums">
-              <span>
-                Taken:{' '}
-                <strong className="text-[#0D9488] dark:text-[#14B8A6]">
-                  {activeMetrics.takenCount}
-                </strong>
-              </span>
-              <span>
-                Skipped:{' '}
-                <strong className="text-amber-700 dark:text-amber-400">
-                  {activeMetrics.skippedCount}
-                </strong>
-              </span>
-              <span>
-                Unconfirmed missing logs:{' '}
-                <strong className="text-red-600 dark:text-red-400">
-                  {activeMetrics.unconfirmedCount}
-                </strong>
-              </span>
-            </div>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activeMetrics.dailySeries}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={isDark ? '#334155' : '#E2E8F0'}
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }}
-                  />
-                  <YAxis
-                    allowDecimals={false}
-                    tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: isDark ? '#172033' : '#FFFFFF',
-                      borderColor: isDark ? '#334155' : '#E2E8F0',
-                      color: isDark ? '#F8FAFC' : '#172554',
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Bar
-                    dataKey="taken"
-                    stackId="a"
-                    fill={isDark ? '#14B8A6' : '#0D9488'}
-                    name="Taken"
-                    radius={[0, 0, 0, 0]}
-                  />
-                  <Bar dataKey="skipped" stackId="a" fill="#D97706" name="Skipped" />
-                  <Bar
-                    dataKey="unconfirmed"
-                    stackId="a"
-                    fill="#DC2626"
-                    name="Unconfirmed"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Refill forecast</CardTitle>
-              <CardDescription>Based on recorded stock and daily doses</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {refillForecasts.map((r) => (
-                <div
-                  key={r.medicationId}
-                  className="flex items-center justify-between gap-3 border-b border-[#E2E8F0] dark:border-[#334155] pb-2.5 last:border-0 last:pb-0"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#172554] dark:text-[#F8FAFC] truncate">
-                      {r.medicationName} {r.strength}
-                    </p>
-                    <p className="text-xs text-[#64748B] dark:text-[#94A3B8] tabular-nums">
-                      {r.remainingQuantity !== null
-                        ? `${r.remainingQuantity} ${r.unitLabel} left`
-                        : 'Quantity not recorded'}
-                      {r.estimatedRefillDate ? ` · Est. ${formatShortDate(r.estimatedRefillDate)}` : ''}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      'text-xs font-semibold whitespace-nowrap tabular-nums',
-                      r.needsRefill
-                        ? 'text-amber-700 dark:text-amber-400'
-                        : 'text-[#64748B] dark:text-[#94A3B8]',
-                    )}
-                  >
-                    {r.daysRemaining !== null ? `${r.daysRemaining}d left` : 'PRN'}
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Care Circle</CardTitle>
-                <CardDescription>{patientConnections.length} connected contact(s)</CardDescription>
-              </div>
-              <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/caregivers')}>
-                Manage
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-2.5">
-              {patientConnections.length === 0 ? (
-                <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
-                  No caregiver connections yet.
-                </p>
-              ) : (
-                patientConnections.map((c) => (
-                  <div
-                    key={c.id}
-                    className="flex items-center justify-between text-xs border-b border-[#E2E8F0] dark:border-[#334155] pb-2 last:border-0 last:pb-0"
-                  >
-                    <div>
-                      <p className="font-semibold text-[#172554] dark:text-[#F8FAFC]">
-                        {c.caregiverName}
+            {refillForecasts.length === 0 ? (
+              <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                No active medications tracked yet.
+              </p>
+            ) : (
+              <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+                {refillForecasts.map((r) => (
+                  <div key={r.medicationId} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0] truncate">
+                        {r.medicationName} {r.strength}
                       </p>
-                      <p className="text-[#64748B] dark:text-[#94A3B8]">
-                        {c.relationship} · {c.contactPriority}
+                      <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2] tabular-nums">
+                        {r.remainingQuantity !== null
+                          ? `${r.remainingQuantity} ${r.unitLabel} left`
+                          : 'Quantity not recorded'}
+                        {r.estimatedRefillDate ? ` · Est. ${formatShortDate(r.estimatedRefillDate)}` : ''}
                       </p>
                     </div>
                     <span
                       className={cn(
-                        'font-medium capitalize',
-                        c.status === 'accepted'
-                          ? 'text-[#0D9488] dark:text-[#14B8A6]'
-                          : 'text-amber-700 dark:text-amber-400',
+                        'font-mono text-xs font-semibold tabular-nums whitespace-nowrap',
+                        r.needsRefill
+                          ? 'text-amber-700 dark:text-amber-400'
+                          : 'text-[#24A99B] dark:text-[#2DD4BF]',
                       )}
                     >
-                      {c.status}
+                      {r.daysRemaining !== null ? `${r.daysRemaining}d left` : 'PRN'}
                     </span>
                   </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Recent Care Activity */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Recent care activity</CardTitle>
-            <CardDescription>Latest logged doses, refills, alerts, and shared notes</CardDescription>
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => navigate('/history')}>
-            Full care history
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
-            {recentHistory.map((ev) => (
-              <div
-                key={ev.id}
-                className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="text-sm font-medium text-[#172554] dark:text-[#F8FAFC]">
-                    {ev.title}
-                  </p>
-                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">{ev.details}</p>
-                </div>
-                <div className="text-xs text-[#64748B] dark:text-[#94A3B8] font-mono tabular-nums shrink-0">
-                  {formatTimestamp(ev.timestamp)} · {ev.actorName}
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Recent Care Activity</CardTitle>
+              <CardDescription>Logged doses, prescriptions, and shared updates</CardDescription>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/history')}>
+              Full History
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {recentHistory.length === 0 ? (
+              <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                No recorded activity yet.
+              </p>
+            ) : (
+              <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+                {recentHistory.map((ev) => (
+                  <div key={ev.id} className="py-2.5 first:pt-0 last:pb-0 space-y-0.5">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                        {ev.title}
+                      </span>
+                      <span className="font-mono text-[11px] text-[#5C627D] dark:text-[#A3A9C2] tabular-nums shrink-0">
+                        {formatTimestamp(ev.timestamp)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">{ev.details}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Skip Reason Modal */}
       <Dialog open={Boolean(skipModalSlot)} onOpenChange={(open) => !open && setSkipModalSlot(null)}>
@@ -717,17 +735,14 @@ export function PatientDashboardPage() {
             className="space-y-4"
           >
             <div>
-              <label
-                htmlFor="skip-reason-input"
-                className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1.5"
-              >
-                Optional reason (helps your doctor and Care Circle understand)
+              <label htmlFor="skip-reason-input" className="block text-xs font-semibold mb-1.5">
+                Optional reason
               </label>
               <Input
                 id="skip-reason-input"
                 value={skipReason}
                 onChange={(e) => setSkipReason(e.target.value)}
-                placeholder="e.g., Mild nausea, out of stock, fasting..."
+                placeholder="e.g., Mild nausea, out of stock..."
               />
             </div>
             <div className="flex justify-end gap-2">

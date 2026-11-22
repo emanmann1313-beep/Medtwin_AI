@@ -72,6 +72,7 @@ export function mapConnectionToConsentRecord(
     relationship: conn.relationship,
     contact_priority: conn.contactPriority,
     status: conn.status,
+    requested_by: conn.requestedBy,
     scopes: permissionsToScopes(conn.permissions),
     alert_threshold: conn.alertPreferences.repeatedMissedThreshold,
     notify_on_refill: conn.alertPreferences.notifyOnRefillNeeded,

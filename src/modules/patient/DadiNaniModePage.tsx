@@ -1,19 +1,49 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
+  AlertCircle,
   Check,
   HeartHandshake,
+  Loader2,
   Mic,
   MicOff,
+  RefreshCw,
   Send,
+  Square,
   Volume2,
-  AlertCircle,
 } from 'lucide-react';
+import { useAuth } from '@/src/context/AuthContext';
 import { useMedTwin } from '@/src/context/MedTwinContext';
+import {
+  buildDoseSlotsForDate,
+  computeAdherenceMetrics,
+  getTodayIso,
+} from '@/src/services/adherenceEngine';
+import { sendAiChatMessage } from '@/src/services/aiService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Input, Textarea } from '@/src/components/ui/input';
 import { cn, formatTime12h, formatTimestamp } from '@/src/lib/utils';
 import { DadiNaniEntry } from '@/src/types/medtwin';
+
+type VoiceState = 'idle' | 'listening' | 'understanding' | 'speaking' | 'error';
+
+const VOICE_STATE_LABEL: Record<VoiceState, string> = {
+  idle: 'Tap to Speak',
+  listening: 'Listening...',
+  understanding: 'Understanding...',
+  speaking: 'Speaking...',
+  error: 'Try Again',
+};
+
+const QUICK_QUESTIONS = [
+  'What medicine should I take now?',
+  'When is my next dose?',
+  'Did I miss any medicines?',
+  'How many tablets are left?',
+  'Read my medicine instructions.',
+  'Contact my caregiver.',
+];
 
 const QUICK_PROBLEMS = [
   'Mild stomach discomfort',
@@ -24,52 +54,165 @@ const QUICK_PROBLEMS = [
   'Trouble sleeping',
 ];
 
+const LANG_OPTIONS = [
+  { id: 'en' as const, label: 'English', speechLang: 'en-US' },
+  { id: 'hi' as const, label: 'हिन्दी (Hindi)', speechLang: 'hi-IN' },
+  { id: 'pa' as const, label: 'ਪੰਜਾਬੀ (Punjabi)', speechLang: 'pa-IN' },
+];
+
 export function DadiNaniModePage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     state,
+    hasPatients,
     activePatient,
     dadiNaniMode,
     setDadiNaniMode,
+    dadiNaniLanguage,
+    setDadiNaniLanguage,
     addDadiNaniEntry,
   } = useMedTwin();
 
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+  const [recognizedText, setRecognizedText] = useState('');
+  const [textFallback, setTextFallback] = useState('');
+  const [assistantReply, setAssistantReply] = useState('');
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const recognitionRef = useRef<{ stop?: () => void } | null>(null);
+
+  // Sharing journal states (preserved)
   const [entryType, setEntryType] = useState<DadiNaniEntry['entryType']>('problem');
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [feelingSummary, setFeelingSummary] = useState('');
   const [homeComfortNote, setHomeComfortNote] = useState('');
   const [shareWithCareCircle, setShareWithCareCircle] = useState(true);
   const [shareWithDoctor, setShareWithDoctor] = useState(true);
-  const [listening, setListening] = useState(false);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  const todayStr = getTodayIso();
 
   const activeMeds = useMemo(
     () =>
-      state.medications.filter(
-        (m) => m.patientId === activePatient.id && m.status === 'active',
-      ),
-    [activePatient.id, state.medications],
+      hasPatients
+        ? state.medications.filter(
+            (m) => m.patientId === activePatient.id && m.status === 'active',
+          )
+        : [],
+    [activePatient.id, hasPatients, state.medications],
+  );
+
+  const todaySlots = useMemo(
+    () =>
+      hasPatients
+        ? buildDoseSlotsForDate(activePatient.id, todayStr, state.medications, state.doseLogs)
+        : [],
+    [activePatient.id, hasPatients, state.doseLogs, state.medications, todayStr],
+  );
+
+  const metrics7 = useMemo(
+    () =>
+      hasPatients
+        ? computeAdherenceMetrics(activePatient.id, 7, state.medications, state.doseLogs)
+        : { adherencePct: null, unconfirmedCount: 0 },
+    [activePatient.id, hasPatients, state.doseLogs, state.medications],
   );
 
   const entries = useMemo(
-    () => state.dadiNaniEntries.filter((e) => e.patientId === activePatient.id),
-    [activePatient.id, state.dadiNaniEntries],
+    () =>
+      hasPatients
+        ? state.dadiNaniEntries.filter((e) => e.patientId === activePatient.id)
+        : [],
+    [activePatient.id, hasPatients, state.dadiNaniEntries],
   );
 
-  const toggleSymptom = (sym: string) => {
-    setSelectedSymptoms((prev) =>
-      prev.includes(sym) ? prev.filter((s) => s !== sym) : [...prev, sym],
-    );
-  };
+  const currentLangMeta =
+    LANG_OPTIONS.find((l) => l.id === dadiNaniLanguage) ?? LANG_OPTIONS[0];
 
-  const speakMedicine = (text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  const speakOutLoud = (text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setVoiceState('idle');
+      return;
+    }
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = 0.9;
+    u.lang = currentLangMeta.speechLang;
+    u.rate = 0.88;
+    setVoiceState('speaking');
+    u.onend = () => setVoiceState('idle');
+    u.onerror = () => setVoiceState('idle');
     window.speechSynthesis.speak(u);
   };
 
-  const handleVoiceDictate = () => {
+  const stopSpeaking = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setVoiceState('idle');
+  };
+
+  const askElderQuestion = async (questionText: string) => {
+    const trimmed = questionText.trim();
+    if (!trimmed) return;
+
+    setRecognizedText(trimmed);
+    setVoiceError(null);
+    setVoiceState('understanding');
+
+    try {
+      const patientContext = {
+        patientName: hasPatients ? activePatient.name : user?.fullName || 'Patient',
+        today: todayStr,
+        medications: activeMeds.map((m) => ({
+          name: m.name,
+          strength: m.strength,
+          instructions: m.instructions,
+          scheduledTimes: m.scheduledTimes.map(formatTime12h),
+          remainingQuantity: m.remainingQuantity,
+          unitLabel: m.unitLabel,
+        })),
+        todaySchedule: todaySlots.map((s) => ({
+          medicine: `${s.medication.name} ${s.medication.strength}`,
+          time: formatTime12h(s.scheduledTime),
+          status: s.state,
+        })),
+        missedOrUnconfirmed7d: metrics7.unconfirmedCount,
+        caregivers: state.connections
+          .filter((c) => c.patientId === activePatient.id && c.status === 'accepted')
+          .map((c) => `${c.caregiverName} (${c.relationship})`),
+      };
+
+      const res = await sendAiChatMessage({
+        message: trimmed,
+        history: [],
+        patientContext,
+        dadiNaniMode: true,
+        role: 'patient',
+        language: dadiNaniLanguage,
+      });
+
+      setAssistantReply(res);
+      speakOutLoud(res);
+    } catch (err) {
+      setVoiceState('error');
+      setVoiceError(
+        err instanceof Error
+          ? err.message
+          : 'Could not get an answer right now. Please tap Try Again.',
+      );
+    }
+  };
+
+  const handleMicButtonClick = () => {
+    if (voiceState === 'listening') {
+      recognitionRef.current?.stop?.();
+      setVoiceState('idle');
+      return;
+    }
+    if (voiceState === 'speaking') {
+      stopSpeaking();
+      return;
+    }
+
     const w = window as unknown as {
       SpeechRecognition?: new () => {
         lang: string;
@@ -78,6 +221,7 @@ export function DadiNaniModePage() {
         onerror: (() => void) | null;
         onend: (() => void) | null;
         start: () => void;
+        stop: () => void;
       };
       webkitSpeechRecognition?: new () => {
         lang: string;
@@ -86,33 +230,58 @@ export function DadiNaniModePage() {
         onerror: (() => void) | null;
         onend: (() => void) | null;
         start: () => void;
+        stop: () => void;
       };
     };
+
     const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!Ctor) {
-      setVoiceError('Voice dictation is not supported in this browser; please type below.');
+      setVoiceState('error');
+      setVoiceError(
+        'Voice microphone recognition is not supported in this browser. Please tap a quick question or type your question below.',
+      );
       return;
     }
+
     setVoiceError(null);
-    setListening(true);
+    setVoiceState('listening');
     const rec = new Ctor();
-    rec.lang = 'en-US';
+    recognitionRef.current = rec;
+    rec.lang = currentLangMeta.speechLang;
     rec.interimResults = false;
+
+    let gotResult = false;
     rec.onresult = (ev) => {
+      gotResult = true;
       const spoken = ev.results[0]?.[0]?.transcript ?? '';
-      setFeelingSummary((prev) => (prev ? `${prev} ${spoken}` : spoken));
+      if (spoken.trim()) {
+        void askElderQuestion(spoken);
+      } else {
+        setVoiceState('error');
+        setVoiceError('Did not hear words clearly. Please tap Try Again or type below.');
+      }
     };
     rec.onerror = () => {
-      setListening(false);
-      setVoiceError('Could not capture microphone audio.');
+      setVoiceState('error');
+      setVoiceError('Microphone access denied or unavailable. Please check permissions or type below.');
     };
-    rec.onend = () => setListening(false);
+    rec.onend = () => {
+      if (!gotResult) {
+        setVoiceState((prev) => (prev === 'listening' ? 'idle' : prev));
+      }
+    };
     rec.start();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const toggleSymptom = (sym: string) => {
+    setSelectedSymptoms((prev) =>
+      prev.includes(sym) ? prev.filter((s) => s !== sym) : [...prev, sym],
+    );
+  };
+
+  const handleJournalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!feelingSummary.trim() && selectedSymptoms.length === 0) return;
+    if ((!feelingSummary.trim() && selectedSymptoms.length === 0) || !activePatient.id) return;
 
     addDadiNaniEntry({
       patientId: activePatient.id,
@@ -132,47 +301,268 @@ export function DadiNaniModePage() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-amber-200 bg-amber-50/40 dark:border-amber-500/35 dark:bg-amber-500/10">
-        <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
-              <HeartHandshake className="h-6 w-6" />
+      {/* Elder Voice-First Hero */}
+      <Card className="overflow-hidden border-[#D8C5E8] bg-linear-to-b from-[#FFFFFF] to-[#F5E5EC]/45 dark:border-[#2B314D] dark:from-[#171B2E] dark:to-[#101322]">
+        <CardContent className="pt-8 pb-8 px-6 text-center space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] p-1 dark:border-[#2B314D] dark:bg-[#101322]">
+              {LANG_OPTIONS.map((lang) => (
+                <button
+                  key={lang.id}
+                  type="button"
+                  onClick={() => setDadiNaniLanguage(lang.id)}
+                  className={cn(
+                    'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer',
+                    dadiNaniLanguage === lang.id
+                      ? 'bg-[#7956C8] text-white'
+                      : 'text-[#5C627D] hover:text-[#20243A] dark:text-[#A3A9C2] dark:hover:text-[#F7F5F0]',
+                  )}
+                >
+                  {lang.label}
+                </button>
+              ))}
             </div>
-            <div>
-              <h2 className="font-display text-xl font-bold text-[#172554] dark:text-[#F8FAFC]">
-                Dadi-Nani Mode — Share Medicines &amp; Problems
-              </h2>
-              <p className="mt-1 text-sm text-[#64748B] dark:text-[#94A3B8] max-w-2xl">
-                Warm, simple, large-print family view for elders and loved ones to review medicines,
-                share daily discomforts or questions, and coordinate comforting home routines alongside prescribed care.
-              </p>
-            </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Button
               type="button"
-              variant={dadiNaniMode ? 'amber' : 'outline'}
+              variant={dadiNaniMode ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setDadiNaniMode(!dadiNaniMode)}
             >
-              {dadiNaniMode ? 'Large-Print Mode: On' : 'Enable Large-Print Mode'}
+              <HeartHandshake className="h-4 w-4" />
+              <span>{dadiNaniMode ? 'Large-Print: On' : 'Enable Large-Print'}</span>
             </Button>
+          </div>
+
+          <div className="mx-auto max-w-2xl space-y-2">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#20243A] dark:text-[#F7F5F0]">
+              Namaste! How can I help you today? ❤️
+            </h2>
+            <p className="text-base sm:text-lg text-[#5C627D] dark:text-[#A3A9C2]">
+              Just tap the microphone and speak. I’m here to help.
+            </p>
+          </div>
+
+          {/* Central Voice Button + Animated Sound Waves */}
+          <div className="flex flex-col items-center justify-center gap-4 py-2">
+            <button
+              type="button"
+              onClick={handleMicButtonClick}
+              aria-label={VOICE_STATE_LABEL[voiceState]}
+              className={cn(
+                'relative flex h-28 w-28 items-center justify-center rounded-full text-white shadow-xl transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#7956C8]/40 cursor-pointer',
+                voiceState === 'listening'
+                  ? 'bg-linear-to-br from-[#7956C8] to-[#24A99B] ring-8 ring-[#7956C8]/25'
+                  : voiceState === 'error'
+                    ? 'bg-amber-600'
+                    : 'bg-linear-to-br from-[#7956C8] to-[#24A99B]',
+              )}
+            >
+              {voiceState === 'understanding' ? (
+                <Loader2 className="h-11 w-11 animate-spin" />
+              ) : voiceState === 'listening' ? (
+                <MicOff className="h-11 w-11" />
+              ) : voiceState === 'speaking' ? (
+                <Square className="h-9 w-9" />
+              ) : (
+                <Mic className="h-11 w-11" />
+              )}
+            </button>
+
+            {/* Animated Sound Waves */}
+            <div className="flex h-7 items-center gap-1.5" aria-hidden="true">
+              {[0, 120, 240, 160, 80].map((delay, i) => (
+                <span
+                  key={i}
+                  style={{ animationDelay: `${delay}ms` }}
+                  className={cn(
+                    'w-1.5 rounded-full transition-all',
+                    voiceState === 'listening' || voiceState === 'speaking'
+                      ? 'h-6 bg-[#7956C8] dark:bg-[#2DD4BF] animate-voice-wave'
+                      : 'h-2 bg-[#D8C5E8] dark:bg-[#2B314D]',
+                  )}
+                />
+              ))}
+            </div>
+
+            <p className="font-display text-lg font-bold text-[#7956C8] dark:text-[#A58AE8]">
+              {VOICE_STATE_LABEL[voiceState]}
+            </p>
+          </div>
+
+          {voiceError && (
+            <div className="mx-auto max-w-xl flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{voiceError}</span>
+            </div>
+          )}
+
+          {/* Voice Response Box */}
+          {(recognizedText || assistantReply) && (
+            <div className="mx-auto max-w-2xl rounded-2xl border border-[#D8C5E8] bg-[#FFFFFF] p-5 text-left space-y-3 shadow-sm dark:border-[#2B314D] dark:bg-[#171B2E]">
+              {recognizedText && (
+                <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+                  <strong>You asked:</strong> “{recognizedText}”
+                </p>
+              )}
+              {assistantReply && (
+                <>
+                  <p className="text-base sm:text-lg leading-relaxed font-medium text-[#20243A] dark:text-[#F7F5F0] whitespace-pre-wrap">
+                    {assistantReply}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => speakOutLoud(assistantReply)}
+                    >
+                      <Volume2 className="h-4 w-4" />
+                      <span>Replay Voice</span>
+                    </Button>
+                    {voiceState === 'speaking' && (
+                      <Button type="button" size="sm" variant="outline" onClick={stopSpeaking}>
+                        <Square className="h-3.5 w-3.5" />
+                        <span>Stop</span>
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        stopSpeaking();
+                        handleMicButtonClick();
+                      }}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      <span>Ask Another Question</span>
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Text-Input Fallback */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = textFallback.trim();
+              if (!q) return;
+              setTextFallback('');
+              void askElderQuestion(q);
+            }}
+            className="mx-auto max-w-xl flex flex-col gap-2 sm:flex-row"
+          >
+            <Input
+              value={textFallback}
+              onChange={(e) => setTextFallback(e.target.value)}
+              placeholder="Or type your question here..."
+              className="h-12 text-base"
+            />
+            <Button type="submit" size="lg" disabled={!textFallback.trim() || voiceState === 'understanding'}>
+              <Send className="h-4 w-4" />
+              <span>Ask</span>
+            </Button>
+          </form>
+
+          {/* 6 Quick Question Buttons */}
+          <div className="mx-auto max-w-3xl pt-2">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#5C627D] dark:text-[#A3A9C2]">
+              Quick Voice Questions — Tap Any Button
+            </p>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              {QUICK_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => {
+                    if (q === 'Contact my caregiver.') {
+                      navigate('/caregivers');
+                      return;
+                    }
+                    void askElderQuestion(q);
+                  }}
+                  className="rounded-2xl border border-[#E6E0D8] bg-[#FFFFFF] px-4 py-3 text-left text-sm font-semibold text-[#20243A] hover:border-[#7956C8] hover:text-[#7956C8] transition-colors cursor-pointer dark:border-[#2B314D] dark:bg-[#171B2E] dark:text-[#F7F5F0] dark:hover:border-[#A58AE8]"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Large Plain-Language Medicine Cards + Share How You Feel */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Left: Share your problem or comfort routine */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Share how you feel today</CardTitle>
+            <CardTitle className="text-lg">Your medicines in simple words</CardTitle>
             <CardDescription>
-              Tap common discomforts or speak/type what you want your family or doctor to know.
+              Tap “Read aloud” to hear clear timing and instructions
+              {hasPatients ? ` for ${activePatient.name}` : ''}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {activeMeds.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-[#E6E0D8] p-6 text-center text-sm text-[#5C627D] dark:border-[#2B314D] dark:text-[#A3A9C2]">
+                No saved prescriptions yet. Scan a prescription to see your medicine cards here.
+              </div>
+            ) : (
+              activeMeds.map((med) => {
+                const spoken = `${med.name} ${med.strength}. ${med.doseAndRoute}. ${med.instructions}. ${
+                  med.scheduledTimes.length > 0
+                    ? `Take at ${med.scheduledTimes.map(formatTime12h).join(' and ')}.`
+                    : 'Take only as needed.'
+                }`;
+                return (
+                  <div
+                    key={med.id}
+                    className="flex flex-col gap-3 rounded-2xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#2B314D] dark:bg-[#101322]"
+                  >
+                    <div className="space-y-1">
+                      <p className="text-lg font-bold text-[#20243A] dark:text-[#F7F5F0]">
+                        {med.name} · {med.strength}
+                      </p>
+                      <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">{med.instructions}</p>
+                      <p className="text-xs font-mono text-[#24A99B] dark:text-[#2DD4BF] tabular-nums">
+                        {med.scheduledTimes.length > 0
+                          ? med.scheduledTimes.map(formatTime12h).join(' · ')
+                          : 'As needed (PRN)'}
+                        {typeof med.remainingQuantity === 'number'
+                          ? ` · ${med.remainingQuantity} ${med.unitLabel} left`
+                          : ''}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => speakOutLoud(spoken)}
+                      className="shrink-0"
+                    >
+                      <Volume2 className="h-4 w-4" />
+                      <span>Read aloud</span>
+                    </Button>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Preserved Dadi-Nani Feeling & Home Comfort Sharing */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Share how you feel with family &amp; doctor</CardTitle>
+            <CardDescription>
+              Tap common discomforts or write a quick note for your Care Circle.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="inline-flex rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-1 dark:border-[#334155] dark:bg-[#0B1220]">
+            <form onSubmit={handleJournalSubmit} className="space-y-4">
+              <div className="inline-flex rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-1 dark:border-[#2B314D] dark:bg-[#101322]">
                 {(
                   [
                     { id: 'problem', label: 'Health Problem' },
@@ -187,8 +577,8 @@ export function DadiNaniModePage() {
                     className={cn(
                       'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                       entryType === t.id
-                        ? 'bg-[#FFFFFF] text-[#172554] shadow-xs dark:bg-[#172033] dark:text-[#F8FAFC]'
-                        : 'text-[#64748B] hover:text-[#172554] dark:text-[#94A3B8] dark:hover:text-[#F8FAFC]',
+                        ? 'bg-[#FFFFFF] text-[#20243A] shadow-xs dark:bg-[#171B2E] dark:text-[#F7F5F0]'
+                        : 'text-[#5C627D] dark:text-[#A3A9C2]',
                     )}
                   >
                     {t.label}
@@ -196,154 +586,70 @@ export function DadiNaniModePage() {
                 ))}
               </div>
 
-              <div>
-                <p className="mb-2 text-xs font-medium text-[#172554] dark:text-[#F8FAFC]">
-                  Common feelings or problems (optional):
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {QUICK_PROBLEMS.map((sym) => {
-                    const active = selectedSymptoms.includes(sym);
-                    return (
-                      <button
-                        key={sym}
-                        type="button"
-                        onClick={() => toggleSymptom(sym)}
-                        className={cn(
-                          'inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-colors cursor-pointer',
-                          active
-                            ? 'border-[#0D9488] bg-[#CCFBF1]/70 text-[#0D9488] dark:border-[#14B8A6] dark:bg-[#14B8A6]/18 dark:text-[#14B8A6]'
-                            : 'border-[#E2E8F0] bg-[#FFFFFF] text-[#172554] hover:bg-[#F8FAFC] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC] dark:hover:bg-[#1E293B]',
-                        )}
-                      >
-                        {active && <Check className="h-3.5 w-3.5" />}
-                        <span>{sym}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="flex flex-wrap gap-2">
+                {QUICK_PROBLEMS.map((sym) => {
+                  const active = selectedSymptoms.includes(sym);
+                  return (
+                    <button
+                      key={sym}
+                      type="button"
+                      onClick={() => toggleSymptom(sym)}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-colors cursor-pointer',
+                        active
+                          ? 'border-[#7956C8] bg-[#D8C5E8]/45 text-[#7956C8] dark:border-[#A58AE8] dark:bg-[#7956C8]/25 dark:text-[#F7F5F0]'
+                          : 'border-[#E6E0D8] bg-[#FFFFFF] text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]',
+                      )}
+                    >
+                      {active && <Check className="h-3.5 w-3.5" />}
+                      <span>{sym}</span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label htmlFor="dn-summary" className="text-xs font-medium text-[#172554] dark:text-[#F8FAFC]">
-                    Describe what is bothering you or what happened with a medicine
-                  </label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={listening ? 'danger' : 'outline'}
-                    onClick={handleVoiceDictate}
-                  >
-                    {listening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-                    <span>{listening ? 'Listening...' : 'Speak'}</span>
-                  </Button>
-                </div>
-                <Textarea
-                  id="dn-summary"
-                  value={feelingSummary}
-                  onChange={(e) => setFeelingSummary(e.target.value)}
-                  placeholder="Example: Felt mild dizziness 30 minutes after my morning tablet, so I rested and drank water."
-                />
-                {voiceError && (
-                  <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    <span>{voiceError}</span>
-                  </p>
-                )}
-              </div>
+              <Textarea
+                value={feelingSummary}
+                onChange={(e) => setFeelingSummary(e.target.value)}
+                placeholder="Describe how you feel or ask a question about a medicine..."
+              />
 
-              <div>
-                <label htmlFor="dn-comfort" className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1.5">
-                  Home comfort routine used (kept separate from prescribed medicines)
-                </label>
-                <Input
-                  id="dn-comfort"
-                  value={homeComfortNote}
-                  onChange={(e) => setHomeComfortNote(e.target.value)}
-                  placeholder="e.g., Warm ginger tea, warm compress on knee, light walk..."
-                />
-              </div>
+              <Input
+                value={homeComfortNote}
+                onChange={(e) => setHomeComfortNote(e.target.value)}
+                placeholder="Optional home comfort routine (e.g., warm ginger tea, rest)"
+              />
 
-              <div className="space-y-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 text-xs text-[#172554] dark:border-[#334155] dark:bg-[#0B1220] dark:text-[#F8FAFC]">
-                <label className="flex items-center gap-2.5 cursor-pointer">
+              <div className="space-y-2 rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-3 text-xs dark:border-[#2B314D] dark:bg-[#101322]">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={shareWithCareCircle}
                     onChange={(e) => setShareWithCareCircle(e.target.checked)}
-                    className="h-4 w-4 accent-[#0D9488] dark:accent-[#14B8A6]"
+                    className="h-4 w-4 accent-[#7956C8]"
                   />
-                  <span>Share with consented Care Circle family members (triggers simulated notification if enabled)</span>
+                  <span>Share with consented Care Circle family members</span>
                 </label>
-                <label className="flex items-center gap-2.5 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={shareWithDoctor}
                     onChange={(e) => setShareWithDoctor(e.target.checked)}
-                    className="h-4 w-4 accent-[#0D9488] dark:accent-[#14B8A6]"
+                    className="h-4 w-4 accent-[#7956C8]"
                   />
-                  <span>Include in doctor’s pre-visit summary timeline</span>
+                  <span>Include in doctor’s summary timeline</span>
                 </label>
               </div>
 
               <Button
                 type="submit"
                 className="w-full"
-                disabled={!feelingSummary.trim() && selectedSymptoms.length === 0}
+                disabled={(!feelingSummary.trim() && selectedSymptoms.length === 0) || !hasPatients}
               >
                 <Send className="h-4 w-4" />
                 <span>Share update with care team</span>
               </Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Right: Simple Plain-Language Medicine Cards with Read-Aloud */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Your medicines in simple words</CardTitle>
-            <CardDescription>
-              Tap “Read aloud” to hear clear timing and instructions for {activePatient.name}.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {activeMeds.map((med) => {
-              const spoken = `${med.name} ${med.strength}. ${med.doseAndRoute}. ${med.instructions}. ${
-                med.scheduledTimes.length > 0
-                  ? `Take at ${med.scheduledTimes.map(formatTime12h).join(' and ')}.`
-                  : 'Take only as needed.'
-              }`;
-              return (
-                <div
-                  key={med.id}
-                  className="flex flex-col gap-3 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#334155] dark:bg-[#0B1220]"
-                >
-                  <div className="space-y-1">
-                    <p className="text-base font-semibold text-[#172554] dark:text-[#F8FAFC]">
-                      {med.name} · {med.strength}
-                    </p>
-                    <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">{med.instructions}</p>
-                    <p className="text-xs font-mono text-[#0D9488] dark:text-[#14B8A6] tabular-nums">
-                      {med.scheduledTimes.length > 0
-                        ? med.scheduledTimes.map(formatTime12h).join(' · ')
-                        : 'As needed (PRN)'}
-                      {typeof med.remainingQuantity === 'number'
-                        ? ` · ${med.remainingQuantity} ${med.unitLabel} left`
-                        : ''}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => speakMedicine(spoken)}
-                    className="shrink-0"
-                  >
-                    <Volume2 className="h-4 w-4" />
-                    <span>Read aloud</span>
-                  </Button>
-                </div>
-              );
-            })}
           </CardContent>
         </Card>
       </div>
@@ -352,47 +658,28 @@ export function DadiNaniModePage() {
       <Card>
         <CardHeader>
           <CardTitle>Shared Dadi-Nani updates &amp; problem log</CardTitle>
-          <CardDescription>
-            Clearly separates family comfort routines from clinical prescriptions.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#64748B] dark:text-[#94A3B8]">
-              No shared updates yet. Use the form above to share how you are feeling.
+            <p className="py-4 text-center text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+              No shared updates yet.
             </p>
           ) : (
-            <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
+            <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
               {entries.map((entry) => (
-                <div key={entry.id} className="py-4 first:pt-0 last:pb-0 space-y-1.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
-                    <span className="font-semibold text-[#172554] dark:text-[#F8FAFC] capitalize">
+                <div key={entry.id} className="py-3.5 first:pt-0 last:pb-0 space-y-1">
+                  <div className="flex items-center justify-between text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                    <span className="font-semibold text-[#20243A] dark:text-[#F7F5F0] capitalize">
                       {entry.entryType.replace('_', ' ')} · {entry.authorName}
                     </span>
-                    <span className="font-mono tabular-nums">
-                      {formatTimestamp(entry.createdAt)}
-                    </span>
+                    <span className="font-mono tabular-nums">{formatTimestamp(entry.createdAt)}</span>
                   </div>
-                  <p className="text-sm text-[#172554] dark:text-[#F8FAFC]">{entry.feelingSummary}</p>
-                  {entry.symptoms.length > 0 && (
-                    <p className="text-xs text-amber-700 dark:text-amber-400">
-                      Reported feelings: {entry.symptoms.join(', ')}
-                    </p>
-                  )}
+                  <p className="text-sm">{entry.feelingSummary}</p>
                   {entry.homeComfortNote && (
-                    <p className="text-xs text-[#0D9488] dark:text-[#14B8A6]">
+                    <p className="text-xs text-[#24A99B] dark:text-[#2DD4BF]">
                       Home comfort routine: {entry.homeComfortNote}
                     </p>
                   )}
-                  <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
-                    Shared with:{' '}
-                    {[
-                      entry.sharedWithCareCircle && 'Care Circle',
-                      entry.sharedWithDoctor && 'Assigned Doctor',
-                    ]
-                      .filter(Boolean)
-                      .join(' & ') || 'Private journal only'}
-                  </p>
                 </div>
               ))}
             </div>

@@ -4,18 +4,18 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/src/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-xl text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] dark:focus-visible:ring-[#14B8A6] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0B1220] disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-xl text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7956C8] dark:focus-visible:ring-[#A58AE8] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#101322] disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
   {
     variants: {
       variant: {
         default:
-          'bg-[#0D9488] text-white hover:bg-[#0F766E] shadow-xs dark:bg-[#14B8A6] dark:text-[#0B1220] dark:hover:bg-[#2DD4BF]',
+          'bg-[#24A99B] text-white hover:bg-[#1E9286] shadow-xs dark:bg-[#2DD4BF] dark:text-[#101322] dark:hover:bg-[#5EEAD4]',
         secondary:
-          'bg-[#3B82F6] text-white hover:bg-[#2563EB] shadow-xs dark:bg-[#3B82F6] dark:text-white dark:hover:bg-[#2563EB]',
+          'bg-[#7956C8] text-white hover:bg-[#6645B5] shadow-xs dark:bg-[#9D7CE8] dark:text-[#101322] dark:hover:bg-[#B295F0]',
         outline:
-          'border border-[#E2E8F0] bg-[#FFFFFF] text-[#172554] hover:bg-[#CCFBF1]/45 dark:border-[#334155] dark:bg-[#172033] dark:text-[#F8FAFC] dark:hover:bg-[#1E293B]',
+          'border border-[#E6E0D8] bg-[#FFFFFF] text-[#20243A] hover:bg-[#FAF8F5] hover:border-[#7956C8]/40 dark:border-[#2B314D] dark:bg-[#171B2E] dark:text-[#F7F5F0] dark:hover:bg-[#1F253D]',
         ghost:
-          'text-[#172554] hover:bg-[#CCFBF1]/50 dark:text-[#F8FAFC] dark:hover:bg-[#1E293B]',
+          'text-[#20243A] hover:bg-[#D8C5E8]/35 dark:text-[#F7F5F0] dark:hover:bg-[#1F253D]',
         danger: 'bg-red-600 text-white hover:bg-red-700 shadow-xs dark:bg-red-600 dark:hover:bg-red-500',
         amber: 'bg-[#D97706] text-white hover:bg-[#B45309] shadow-xs',
       },

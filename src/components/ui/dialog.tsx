@@ -12,11 +12,11 @@ export const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#0B1220]/55 backdrop-blur-[2px]" />
+    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#101322]/60 backdrop-blur-[2px]" />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 text-[#172554] shadow-xl focus:outline-none max-h-[88vh] overflow-y-auto dark:border-[#334155] dark:bg-[#172033] dark:text-[#F8FAFC]',
+        'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[#E6E0D8] bg-[#FFFFFF] p-6 text-[#20243A] shadow-xl focus:outline-none max-h-[88vh] overflow-y-auto dark:border-[#2B314D] dark:bg-[#171B2E] dark:text-[#F7F5F0]',
         className,
       )}
       {...props}
@@ -24,7 +24,7 @@ export const DialogContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close
         aria-label="Close modal"
-        className="absolute right-4 top-4 rounded-lg p-1.5 text-[#64748B] hover:bg-[#CCFBF1]/50 hover:text-[#172554] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] dark:text-[#94A3B8] dark:hover:bg-[#334155] dark:hover:text-[#F8FAFC] dark:focus-visible:ring-[#14B8A6]"
+        className="absolute right-4 top-4 rounded-lg p-1.5 text-[#5C627D] hover:bg-[#D8C5E8]/40 hover:text-[#20243A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7956C8] dark:text-[#A3A9C2] dark:hover:bg-[#2B314D] dark:hover:text-[#F7F5F0] dark:focus-visible:ring-[#A58AE8]"
       >
         <X className="h-4 w-4" />
       </DialogPrimitive.Close>
@@ -43,7 +43,7 @@ export function DialogTitle({
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={cn('font-display text-lg font-semibold text-[#172554] dark:text-[#F8FAFC]', className)}
+      className={cn('font-display text-lg font-semibold text-[#20243A] dark:text-[#F7F5F0]', className)}
       {...props}
     />
   );
@@ -55,7 +55,7 @@ export function DialogDescription({
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>) {
   return (
     <DialogPrimitive.Description
-      className={cn('text-sm text-[#64748B] dark:text-[#94A3B8]', className)}
+      className={cn('text-sm text-[#5C627D] dark:text-[#A3A9C2]', className)}
       {...props}
     />
   );

@@ -149,6 +149,7 @@ export interface CaregiverConnection {
   relationship: RelationshipLabel;
   contactPriority: 'primary' | 'secondary';
   status: 'invited' | 'accepted' | 'revoked';
+  requestedBy?: 'patient' | 'caregiver';
   permissions: CaregiverPermissions;
   alertPreferences: {
     repeatedMissedThreshold: number;

@@ -15,7 +15,110 @@ import { buildSeedState } from '@/src/data/seedData';
 import { addDaysIso } from '@/src/lib/utils';
 import { getTodayIso } from '@/src/services/adherenceEngine';
 
+import { AuthUser } from '@/src/types/auth';
+
 const DEMO_STORAGE_KEY = 'medtwin_demo_state_v1';
+
+export function getStorageKeyForUser(user: AuthUser | null): string {
+  return user ? `medtwin_user_state_v1_${user.id}` : DEMO_STORAGE_KEY;
+}
+
+export function buildProductionStateForUser(user: AuthUser): MedTwinState {
+  const today = getTodayIso();
+  const baseHospitalId = user.role === 'hospital_admin' ? `hosp-${user.id.slice(0, 8)}` : 'hosp-independent';
+  const baseDoctorId = user.role === 'doctor' ? user.id : 'doc-unassigned';
+  const linkedPatId = user.linkedPatientId ?? `pat-${user.id.slice(0, 8)}`;
+
+  const patientAge = user.dateOfBirth
+    ? Math.max(
+        1,
+        Math.floor(
+          (Date.now() - new Date(`${user.dateOfBirth}T00:00:00`).getTime()) /
+            (365.25 * 24 * 60 * 60 * 1000),
+        ),
+      )
+    : 35;
+
+  return {
+    hospital: {
+      id: baseHospitalId,
+      name: user.hospitalName || user.affiliation || 'MedTwin Connected Care Network',
+      city: user.address || user.country || 'Primary Region',
+      code: user.registrationDetails ? user.registrationDetails.slice(0, 12).toUpperCase() : 'MT-NET',
+      activeDepartments: ['Primary Care', 'Medication Management'],
+    },
+    doctors:
+      user.role === 'doctor'
+        ? [
+            {
+              id: user.id,
+              name: user.fullName,
+              specialty: user.specialty || 'General Medicine',
+              licenseNumber: user.licenseNumber || 'Pending Review',
+              hospitalId: baseHospitalId,
+              email: user.email,
+            },
+          ]
+        : [],
+    patients:
+      user.role === 'patient'
+        ? [
+            {
+              id: linkedPatId,
+              mrn: `MT-${user.id.slice(-5).toUpperCase()}`,
+              name: user.fullName,
+              age: patientAge,
+              gender: 'Unspecified',
+              hospitalId: baseHospitalId,
+              assignedDoctorId: baseDoctorId,
+              conditions: [],
+              allergies: [],
+              lastReviewDate: today,
+              dadiNaniPreferred: user.preferredLanguage !== 'en',
+              preferredLanguageNote: user.preferredLanguage,
+            },
+          ]
+        : [],
+    caregivers:
+      user.role === 'caregiver'
+        ? [
+            {
+              id: user.id,
+              name: user.fullName,
+              email: user.email,
+              phoneLabel: user.phone || 'Email & in-app notifications',
+            },
+          ]
+        : [],
+    connections: [],
+    familyMedicalHistory: [],
+    medications: [],
+    doseLogs: [],
+    prescriptions: [],
+    alerts: [],
+    history: [],
+    clinicianNotes: [],
+    reports: [],
+    appointments: [],
+    dadiNaniEntries: [],
+    managedUsers:
+      user.role === 'hospital_admin'
+        ? [
+            {
+              id: user.id,
+              name: user.fullName,
+              role: 'hospital_admin',
+              hospitalId: baseHospitalId,
+              email: user.email,
+              active: true,
+            },
+          ]
+        : [],
+    activePatientId: user.role === 'patient' ? linkedPatId : '',
+    activeCaregiverId: user.role === 'caregiver' ? user.id : '',
+    activeDoctorId: user.role === 'doctor' ? user.id : '',
+  };
+}
 
 let idCounter = 0;
 function makeId(prefix: string): string {
@@ -59,8 +162,8 @@ export interface CreateCaregiverInviteInput {
 }
 
 export interface IMedTwinService {
-  loadState(): MedTwinState;
-  saveState(state: MedTwinState): void;
+  loadState(storageKey?: string, fallbackBuilder?: () => MedTwinState): MedTwinState;
+  saveState(state: MedTwinState, storageKey?: string): void;
   resetDemoState(): MedTwinState;
   logDose(state: MedTwinState, input: LogDoseInput): MedTwinState;
   undoDose(state: MedTwinState, logId: string, actorName: string): MedTwinState;
@@ -142,12 +245,13 @@ export interface IMedTwinService {
 }
 
 export const demoMedTwinService: IMedTwinService = {
-  loadState(): MedTwinState {
+  loadState(storageKey = activeStorageKey, fallbackBuilder = buildSeedState): MedTwinState {
+    activeStorageKey = storageKey;
     try {
-      const raw = window.localStorage.getItem(DEMO_STORAGE_KEY);
+      const raw = window.localStorage.getItem(storageKey);
       if (!raw) {
-        const fresh = buildSeedState();
-        window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(fresh));
+        const fresh = fallbackBuilder();
+        window.localStorage.setItem(storageKey, JSON.stringify(fresh));
         return fresh;
       }
       const parsed = JSON.parse(raw) as MedTwinState;
@@ -160,13 +264,13 @@ export const demoMedTwinService: IMedTwinService = {
         clinicianNotes: dedupeById(parsed.clinicianNotes ?? []),
       };
     } catch {
-      return buildSeedState();
+      return fallbackBuilder();
     }
   },
 
-  saveState(state: MedTwinState): void {
+  saveState(state: MedTwinState, storageKey = activeStorageKey): void {
     try {
-      window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
+      window.localStorage.setItem(storageKey, JSON.stringify(state));
     } catch {
       // Ignore quota errors in restricted sandboxes
     }
@@ -174,7 +278,7 @@ export const demoMedTwinService: IMedTwinService = {
 
   resetDemoState(): MedTwinState {
     const fresh = buildSeedState();
-    this.saveState(fresh);
+    this.saveState(fresh, DEMO_STORAGE_KEY);
     return fresh;
   },
 

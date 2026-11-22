@@ -3,6 +3,30 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
+import {
+  createPasswordResetRequest,
+  destroySession,
+  getScopedWorkspaceForUser,
+  getSessionUser,
+  isSupabaseConfigured,
+  loginUserAccount,
+  mutateAddClinicianNote,
+  mutateAddDadiNaniEntry,
+  mutateConfirmPrescription,
+  mutateDoctorAuthorization,
+  mutateEnrollHospitalPatient,
+  mutateInviteOrRequestCaregiver,
+  mutateLogDose,
+  mutateMedicationStatus,
+  mutateReplenishMedication,
+  mutateRespondCaregiverConnection,
+  mutateUndoDose,
+  mutateUpdateCaregiverPermissions,
+  registerUserAccount,
+  resetPasswordWithToken,
+  updateUserProfile,
+  verifyEmailWithToken,
+} from './server/authStore.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,39 +53,366 @@ async function startServer() {
   const app = express();
   app.use(express.json({ limit: '12mb' }));
 
+  function extractSessionToken(req: express.Request): string | null {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      return authHeader.slice(7).trim() || null;
+    }
+    const cookieHeader = req.headers.cookie;
+    if (cookieHeader) {
+      for (const part of cookieHeader.split(';')) {
+        const [k, ...rest] = part.trim().split('=');
+        if (k === 'medtwin_session') {
+          return decodeURIComponent(rest.join('='));
+        }
+      }
+    }
+    return null;
+  }
+
+  function setSessionCookie(res: express.Response, token: string): void {
+    res.setHeader(
+      'Set-Cookie',
+      `medtwin_session=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`,
+    );
+  }
+
+  function clearSessionCookie(res: express.Response): void {
+    res.setHeader(
+      'Set-Cookie',
+      'medtwin_session=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0',
+    );
+  }
+
+  function requireAuth(
+    req: express.Request,
+    res: express.Response,
+  ): ReturnType<typeof getSessionUser> {
+    const user = getSessionUser(extractSessionToken(req));
+    if (!user) {
+      res.status(401).json({ error: 'Authentication required. Please sign in.' });
+      return null;
+    }
+    return user;
+  }
+
   // Health endpoint
   app.get('/api/health', (_req, res) => {
     res.json({
       ok: true,
       service: 'medtwin-api',
       aiConfigured: Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY'),
+      supabaseConfigured: isSupabaseConfigured(),
     });
   });
 
-  // MedTwin AI Agent Bot (voice & text chat, Dadi-Nani supportive explanations)
+  // ---------------------------------------------------------------------------
+  // Authentication & Profile Endpoints (Server-Enforced)
+  // ---------------------------------------------------------------------------
+  app.get('/api/auth/session', (req, res) => {
+    const user = getSessionUser(extractSessionToken(req));
+    res.json({
+      user,
+      supabaseConfigured: isSupabaseConfigured(),
+    });
+  });
+
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const result = await registerUserAccount(req.body ?? {});
+      setSessionCookie(res, result.sessionToken);
+      res.status(201).json({
+        user: result.user,
+        sessionToken: result.sessionToken,
+        emailVerificationToken: result.emailVerificationToken,
+        supabaseSynced: result.supabaseSynced,
+        supabaseConfigured: isSupabaseConfigured(),
+      });
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      const msg = err instanceof Error ? err.message : 'Registration failed.';
+      res.status(status).json({ error: msg });
+    }
+  });
+
+  app.post('/api/auth/login', (req, res) => {
+    try {
+      const { email, password } = req.body ?? {};
+      const result = loginUserAccount(email, password);
+      setSessionCookie(res, result.sessionToken);
+      res.json({
+        user: result.user,
+        sessionToken: result.sessionToken,
+        supabaseConfigured: isSupabaseConfigured(),
+      });
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      const msg = err instanceof Error ? err.message : 'Login failed.';
+      res.status(status).json({ error: msg });
+    }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    destroySession(extractSessionToken(req));
+    clearSessionCookie(res);
+    res.json({ ok: true });
+  });
+
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body ?? {};
+      if (!email || typeof email !== 'string') {
+        res.status(400).json({ error: 'Please provide an email address.' });
+        return;
+      }
+      const result = await createPasswordResetRequest(email);
+      res.json(result);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to initiate password reset.';
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  app.post('/api/auth/reset-password', (req, res) => {
+    try {
+      const { token, password } = req.body ?? {};
+      resetPasswordWithToken(token, password);
+      res.json({ ok: true, message: 'Password updated. You can now sign in.' });
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      const msg = err instanceof Error ? err.message : 'Password reset failed.';
+      res.status(status).json({ error: msg });
+    }
+  });
+
+  app.post('/api/auth/verify-email', (req, res) => {
+    try {
+      const { token } = req.body ?? {};
+      const user = verifyEmailWithToken(token);
+      res.json({ ok: true, user });
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      const msg = err instanceof Error ? err.message : 'Email verification failed.';
+      res.status(status).json({ error: msg });
+    }
+  });
+
+  app.patch('/api/auth/profile', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      const updated = updateUserProfile(user.id, req.body ?? {});
+      res.json({ user: updated });
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      const msg = err instanceof Error ? err.message : 'Profile update failed.';
+      res.status(status).json({ error: msg });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Server-Enforced Scoped Workspace & Authorization Routes
+  // ---------------------------------------------------------------------------
+  app.get('/api/workspace/state', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      const data = getScopedWorkspaceForUser(user);
+      res.json(data);
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to load workspace.' });
+    }
+  });
+
+  app.post('/api/workspace/dose', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateLogDose(user, req.body ?? {});
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to log dose.' });
+    }
+  });
+
+  app.post('/api/workspace/dose/undo', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateUndoDose(user, req.body?.logId);
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to undo dose.' });
+    }
+  });
+
+  app.post('/api/workspace/prescription', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateConfirmPrescription(user, req.body ?? {});
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to save prescription.' });
+    }
+  });
+
+  app.post('/api/workspace/medication/status', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateMedicationStatus(user, req.body?.medicationId, req.body?.status);
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to update medication.' });
+    }
+  });
+
+  app.post('/api/workspace/medication/refill', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateReplenishMedication(user, req.body?.medicationId, Number(req.body?.addUnits) || 0);
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to update refill.' });
+    }
+  });
+
+  app.post('/api/workspace/dadi-nani', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateAddDadiNaniEntry(user, req.body ?? {});
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to save entry.' });
+    }
+  });
+
+  app.post('/api/workspace/clinician-note', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateAddClinicianNote(user, req.body ?? {});
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to save clinician note.' });
+    }
+  });
+
+  app.post('/api/access/caregiver-request', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateInviteOrRequestCaregiver(user, req.body ?? {});
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to send request.' });
+    }
+  });
+
+  app.post('/api/access/caregiver-respond', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateRespondCaregiverConnection(user, req.body?.connectionId, req.body?.decision);
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to update connection.' });
+    }
+  });
+
+  app.post('/api/access/caregiver-permissions', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateUpdateCaregiverPermissions(
+        user,
+        req.body?.connectionId,
+        req.body?.permissions,
+        req.body?.alertPreferences,
+      );
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to update permissions.' });
+    }
+  });
+
+  app.post('/api/access/doctor-authorization', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateDoctorAuthorization(user, req.body ?? {});
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to update doctor authorization.' });
+    }
+  });
+
+  app.post('/api/hospital/enroll-patient', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateEnrollHospitalPatient(user, req.body ?? {});
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to enroll patient.' });
+    }
+  });
+
+  // MedTwin AI Agent Bot (shared by Floating AI Chat Assistant & Dadi-Nani voice mode)
   app.post('/api/ai/chat', async (req, res) => {
     try {
-      const { message, history = [], patientContext, dadiNaniMode = false, role = 'patient' } = req.body ?? {};
+      const {
+        message,
+        history = [],
+        patientContext,
+        dadiNaniMode = false,
+        role = 'patient',
+        language = 'en',
+      } = req.body ?? {};
       if (!message || typeof message !== 'string') {
         res.status(400).json({ error: 'A message string is required.' });
         return;
       }
 
       const ai = getGeminiClient();
+      const langInstruction =
+        language === 'hi'
+          ? 'Respond in simple, warm, clear Hindi (Devanagari script) suitable for speaking aloud to an elder.'
+          : language === 'pa'
+            ? 'Respond in simple, warm, clear Punjabi (Gurmukhi script) suitable for speaking aloud to an elder.'
+            : 'Respond in clear, warm English.';
+
       const toneGuidance = dadiNaniMode
-        ? 'The user has Dadi-Nani Mode active. Respond in warm, gentle, simple, elder-friendly language with short sentences. Respect traditional family comfort routines (like warm water, ginger tea, rest) while clearly stating that prescribed doctor medicines must be taken exactly as prescribed and any new symptoms or changes should be shared with their doctor.'
+        ? 'The user has Dadi-Nani Mode active. Respond in warm, gentle, simple, elder-friendly language with short sentences. Respect traditional family comfort routines while clearly stating that prescribed doctor medicines must be taken exactly as prescribed and any new symptoms or changes should be shared with their doctor.'
         : 'Respond clearly, concisely, and empathetically as a medication-management and care-coordination assistant.';
 
       const systemInstruction = [
-        'You are the MedTwin Care Assistant inside MedTwin AI ("Your medicines. Your care team. One connected view.").',
+        'You are the MedTwin Care Assistant inside MedTwin AI ("Medication care, unified.").',
         toneGuidance,
+        langInstruction,
         `Active workspace role: ${role}.`,
         'Safety rules (non-negotiable):',
         '- Never diagnose diseases, estimate organ damage, predict drug blood concentrations, or recommend dose adjustments.',
-        '- Base answers strictly on the provided patient schedule, adherence, and care circle context when referencing their records.',
+        '- Base answers strictly on the provided patient schedule, adherence, and care circle context when referencing their records. If no medications are recorded yet, state that clearly.',
         '- If someone reports severe symptoms (chest pain, difficulty breathing, severe allergic reaction, fainting), advise seeking urgent medical attention immediately.',
-        '- Keep responses practical, structured, and under 180 words unless asked for more detail.',
-        patientContext ? `Current Patient Context (synthetic/demo or session data):\n${JSON.stringify(patientContext)}` : '',
+        '- Keep responses practical, structured, and under 160 words unless asked for more detail.',
+        patientContext ? `Current Patient Context:\n${JSON.stringify(patientContext)}` : '',
       ]
         .filter(Boolean)
         .join('\n\n');
