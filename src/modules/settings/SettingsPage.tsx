@@ -14,6 +14,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useMedTwin } from '@/src/context/MedTwinContext';
 import { DEMO_ACCOUNTS } from '@/src/data/seedData';
+import { CaregiverContactsSection } from '@/src/modules/caregivers/components/CaregiverContactsSection';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Switch } from '@/src/components/ui/switch';
@@ -30,6 +31,9 @@ export function SettingsPage() {
   const { theme, isSystemDefault, setTheme, resetToSystemTheme } = useTheme();
   const {
     isRealAccountMode,
+    activeRole,
+    hasPatients,
+    activePatient,
     activeDemoAccount,
     switchDemoAccount,
     dadiNaniMode,
@@ -55,7 +59,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle>Appearance &amp; color theme</CardTitle>
           <CardDescription>
-            Choose Warm Ivory Light, Deep Navy Dark, or follow your device’s system preference.
+            Choose Warm Ivory Light, Deep Navy Dark, or follow your device’s system preference for public pages. Dashboards stay in Dark Healthcare Theme.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -66,16 +70,16 @@ export function SettingsPage() {
               className={cn(
                 'flex items-start gap-3 rounded-2xl border p-4 text-left transition-all cursor-pointer',
                 !isSystemDefault && theme === 'light'
-                  ? 'border-[#7956C8] bg-[#D8C5E8]/35 dark:border-[#A58AE8] dark:bg-[#7956C8]/20'
-                  : 'border-[#E6E0D8] hover:bg-[#FAF8F5] dark:border-[#2B314D] dark:hover:bg-[#1E243D]',
+                  ? 'border-[#8B5CF6] bg-[#8B5CF6]/20 shadow-[0_0_16px_rgba(139,92,246,0.2)]'
+                  : 'border-[#334155] bg-[#223451] hover:border-[#8B5CF6]/45',
               )}
             >
-              <Sun className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <Sun className="h-5 w-5 text-[#FBBF24] shrink-0 mt-0.5" />
               <div>
-                <span className="text-sm font-semibold block text-[#20243A] dark:text-[#F7F5F0]">
+                <span className="text-sm font-semibold block text-[#F8FAFC]">
                   Light Theme
                 </span>
-                <span className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                <span className="text-xs text-[#A8B8CC]">
                   Warm ivory canvas &amp; crisp white cards
                 </span>
               </div>
@@ -87,16 +91,16 @@ export function SettingsPage() {
               className={cn(
                 'flex items-start gap-3 rounded-2xl border p-4 text-left transition-all cursor-pointer',
                 !isSystemDefault && theme === 'dark'
-                  ? 'border-[#7956C8] bg-[#D8C5E8]/35 dark:border-[#A58AE8] dark:bg-[#7956C8]/20'
-                  : 'border-[#E6E0D8] hover:bg-[#FAF8F5] dark:border-[#2B314D] dark:hover:bg-[#1E243D]',
+                  ? 'border-[#8B5CF6] bg-[#8B5CF6]/20 shadow-[0_0_16px_rgba(139,92,246,0.2)]'
+                  : 'border-[#334155] bg-[#223451] hover:border-[#8B5CF6]/45',
               )}
             >
-              <Moon className="h-5 w-5 text-[#7956C8] dark:text-[#A58AE8] shrink-0 mt-0.5" />
+              <Moon className="h-5 w-5 text-[#8B5CF6] shrink-0 mt-0.5" />
               <div>
-                <span className="text-sm font-semibold block text-[#20243A] dark:text-[#F7F5F0]">
+                <span className="text-sm font-semibold block text-[#F8FAFC]">
                   Dark Theme
                 </span>
-                <span className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                <span className="text-xs text-[#A8B8CC]">
                   Deep midnight navy &amp; violet accents
                 </span>
               </div>
@@ -108,16 +112,16 @@ export function SettingsPage() {
               className={cn(
                 'flex items-start gap-3 rounded-2xl border p-4 text-left transition-all cursor-pointer',
                 isSystemDefault
-                  ? 'border-[#7956C8] bg-[#D8C5E8]/35 dark:border-[#A58AE8] dark:bg-[#7956C8]/20'
-                  : 'border-[#E6E0D8] hover:bg-[#FAF8F5] dark:border-[#2B314D] dark:hover:bg-[#1E243D]',
+                  ? 'border-[#8B5CF6] bg-[#8B5CF6]/20 shadow-[0_0_16px_rgba(139,92,246,0.2)]'
+                  : 'border-[#334155] bg-[#223451] hover:border-[#8B5CF6]/45',
               )}
             >
-              <Laptop className="h-5 w-5 text-[#24A99B] dark:text-[#2DD4BF] shrink-0 mt-0.5" />
+              <Laptop className="h-5 w-5 text-[#2DD4BF] shrink-0 mt-0.5" />
               <div>
-                <span className="text-sm font-semibold block text-[#20243A] dark:text-[#F7F5F0]">
+                <span className="text-sm font-semibold block text-[#F8FAFC]">
                   System Default
                 </span>
-                <span className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                <span className="text-xs text-[#A8B8CC]">
                   Matches device setting ({theme})
                 </span>
               </div>
@@ -130,7 +134,7 @@ export function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <HeartHandshake className="h-5 w-5 text-[#24A99B] dark:text-[#2DD4BF]" />
+            <HeartHandshake className="h-5 w-5 text-[#2DD4BF]" />
             <span>Dadi-Nani Accessibility Preferences</span>
           </CardTitle>
           <CardDescription>
@@ -138,12 +142,12 @@ export function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 dark:border-[#2B314D] dark:bg-[#101322]">
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#334155] bg-[#223451] p-4">
             <div>
-              <p className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+              <p className="text-sm font-semibold text-[#F8FAFC]">
                 Large-Print Reading Size
               </p>
-              <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+              <p className="text-xs text-[#A8B8CC]">
                 Increases base typography and spacing across the workspace for easier reading.
               </p>
             </div>
@@ -155,8 +159,8 @@ export function SettingsPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs font-semibold text-[#20243A] dark:text-[#F7F5F0]">
-              <Globe className="h-4 w-4 text-[#7956C8] dark:text-[#A58AE8]" />
+            <label className="flex items-center gap-2 text-xs font-semibold text-[#F8FAFC]">
+              <Globe className="h-4 w-4 text-[#8B5CF6]" />
               <span>Preferred Voice &amp; Display Language</span>
             </label>
             <div className="grid grid-cols-3 gap-2.5">
@@ -168,8 +172,8 @@ export function SettingsPage() {
                   className={cn(
                     'rounded-xl border px-3 py-2.5 text-center transition-colors cursor-pointer',
                     dadiNaniLanguage === lang.id
-                      ? 'border-[#7956C8] bg-[#D8C5E8]/40 text-[#20243A] dark:border-[#A58AE8] dark:bg-[#7956C8]/25 dark:text-[#F7F5F0]'
-                      : 'border-[#E6E0D8] bg-[#FFFFFF] text-[#5C627D] hover:bg-[#FAF8F5] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#A3A9C2] dark:hover:bg-[#1E243D]',
+                      ? 'border-[#8B5CF6] bg-[#8B5CF6]/20 text-[#F8FAFC]'
+                      : 'border-[#334155] bg-[#223451] text-[#A8B8CC] hover:text-[#F8FAFC]',
                   )}
                 >
                   <span className="text-sm font-semibold block">{lang.native}</span>
@@ -181,12 +185,23 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Patient Caregiver Contacts & Alert Preferences */}
+      {activeRole === 'patient' && hasPatients && activePatient.id && (
+        <CaregiverContactsSection
+          patient={activePatient}
+          canManageContacts
+          compact
+          title="Caregiver Contacts & Alert Preferences"
+          description="Add or edit trusted family caregivers, preferred notification language, WhatsApp/SMS links, and automatic alert rules."
+        />
+      )}
+
       {/* Account Security Link for Authenticated Users */}
       {isRealAccountMode && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-[#24A99B] dark:text-[#2DD4BF]" />
+              <ShieldCheck className="h-5 w-5 text-[#2DD4BF]" />
               <span>Account profile &amp; privacy controls</span>
             </CardTitle>
             <CardDescription>
@@ -208,7 +223,7 @@ export function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-[#24A99B] dark:text-[#2DD4BF]" />
+              <UserCheck className="h-5 w-5 text-[#2DD4BF]" />
               <span>Demo workspace profile &amp; data reset</span>
             </CardTitle>
             <CardDescription>
@@ -227,14 +242,14 @@ export function SettingsPage() {
                     className={cn(
                       'flex flex-col items-start rounded-2xl border p-3.5 text-left transition-colors cursor-pointer',
                       active
-                        ? 'border-[#24A99B] bg-[#24A99B]/10 dark:border-[#2DD4BF] dark:bg-[#2DD4BF]/15'
-                        : 'border-[#E6E0D8] hover:bg-[#FAF8F5] dark:border-[#2B314D] dark:hover:bg-[#1E243D]',
+                        ? 'border-[#2DD4BF] bg-[#2DD4BF]/15 shadow-[0_0_16px_rgba(45,212,191,0.16)]'
+                        : 'border-[#334155] bg-[#223451] hover:border-[#8B5CF6]/45',
                     )}
                   >
-                    <span className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                    <span className="text-sm font-semibold text-[#F8FAFC]">
                       {acc.label}
                     </span>
-                    <span className="text-xs text-[#5C627D] dark:text-[#A3A9C2] mt-0.5">
+                    <span className="text-xs text-[#A8B8CC] mt-0.5">
                       {acc.subtitle}
                     </span>
                   </button>
@@ -242,9 +257,9 @@ export function SettingsPage() {
               })}
             </div>
 
-            <div className="flex flex-col gap-3 border-t border-[#E6E0D8] pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#2B314D]">
-              <div className="flex items-center gap-2 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
-                <ShieldCheck className="h-4 w-4 text-[#24A99B] dark:text-[#2DD4BF] shrink-0" />
+            <div className="flex flex-col gap-3 border-t border-[#334155] pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-xs text-[#A8B8CC]">
+                <ShieldCheck className="h-4 w-4 text-[#2DD4BF] shrink-0" />
                 <span>Resets synthetic schedules, refills, and Care Circle invitations in browser storage.</span>
               </div>
               <Button type="button" variant="outline" onClick={resetDemo}>

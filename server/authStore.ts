@@ -4,8 +4,12 @@ import path from 'path';
 import type {
   AppointmentItem,
   CareAlert,
+  CareAlertChannel,
+  CareAlertType,
   CareHistoryEvent,
+  CaregiverAlertPreferences,
   CaregiverConnection,
+  CaregiverLanguage,
   CaregiverPermissions,
   CaregiverProfile,
   ClinicianNote,
@@ -17,6 +21,7 @@ import type {
   MedTwinState,
   Medication,
   MedicationStatus,
+  MessagingProviderStatus,
   Patient,
   Prescription,
   RelationshipLabel,
@@ -706,8 +711,30 @@ export function getScopedWorkspaceForUser(user: AuthUser): {
         (c.caregiverEmail && c.caregiverEmail.toLowerCase() === user.email.toLowerCase())
       );
     }
-    return allowedPatientIds.has(c.patientId);
+    // Doctors & hospital admins only see accepted (patient-consented) caregiver contacts
+    return allowedPatientIds.has(c.patientId) && c.status === 'accepted';
   });
+
+  // Include contact details for visible caregiver connections so UI cards show phone/WhatsApp/language
+  for (const conn of visibleConnections) {
+    if (!caregiversMap.has(conn.caregiverId)) {
+      const fullPhone =
+        conn.phoneNumber
+          ? `${conn.phoneCountryCode || '+1'} ${conn.phoneNumber}`.trim()
+          : conn.caregiverEmail || 'Contact on file';
+      caregiversMap.set(conn.caregiverId, {
+        id: conn.caregiverId,
+        name: conn.caregiverName,
+        email: conn.caregiverEmail || '',
+        phoneLabel: fullPhone,
+        phoneCountryCode: conn.phoneCountryCode,
+        phoneNumber: conn.phoneNumber,
+        whatsappSameAsPhone: conn.whatsappSameAsPhone,
+        whatsappNumber: conn.whatsappNumber,
+        preferredLanguage: conn.preferredLanguage,
+      });
+    }
+  }
 
   // Scope medications, doseLogs, prescriptions, notes, alerts, history by role & consent
   const scopedMedications = store.medications.filter((m) => {
@@ -777,7 +804,11 @@ export function getScopedWorkspaceForUser(user: AuthUser): {
       const conn = visibleConnections.find(
         (c) => c.patientId === a.patientId && c.status === 'accepted',
       );
-      return Boolean(conn?.permissions.receiveDoseAlerts);
+      if (!conn) return false;
+      if (a.alertType !== 'caregiver_invitation' && !conn.permissions.receiveDoseAlerts) {
+        return false;
+      }
+      return !a.caregiverId || a.caregiverId === conn.caregiverId || a.caregiverId === user.id;
     }
     return true;
   });
@@ -1127,6 +1158,10 @@ export function mutateAddClinicianNote(
   persistStore();
 }
 
+function normalizeDigits(val?: string): string {
+  return (val || '').replace(/\D/g, '');
+}
+
 export function mutateInviteOrRequestCaregiver(
   user: AuthUser,
   input: {
@@ -1134,9 +1169,15 @@ export function mutateInviteOrRequestCaregiver(
     patientId?: string;
     caregiverName?: string;
     caregiverEmail?: string;
+    phoneCountryCode?: string;
+    phoneNumber?: string;
+    whatsappSameAsPhone?: boolean;
+    whatsappNumber?: string;
+    preferredLanguage?: CaregiverLanguage;
     relationship: RelationshipLabel;
     contactPriority?: 'primary' | 'secondary';
     permissions?: CaregiverPermissions;
+    alertPreferences?: Partial<CaregiverAlertPreferences>;
   },
 ): void {
   const nowIso = new Date().toISOString();
@@ -1144,20 +1185,57 @@ export function mutateInviteOrRequestCaregiver(
   if (user.role === 'patient') {
     const patientId = user.linkedPatientId!;
     const targetEmail = (input.caregiverEmail || '').trim().toLowerCase();
-    if (!targetEmail) {
-      throw Object.assign(new Error('Caregiver email is required.'), { status: 400 });
+    const rawPhone = (input.phoneNumber || '').trim();
+    const countryCode = (input.phoneCountryCode || '+1').trim();
+    const phoneDigits = normalizeDigits(rawPhone);
+
+    if (!input.caregiverName?.trim()) {
+      throw Object.assign(new Error('Caregiver full name is required.'), { status: 400 });
     }
-    const matchedCg = Object.values(store.users).find(
-      (u) => u.email.toLowerCase() === targetEmail && u.role === 'caregiver',
-    );
+    if (!phoneDigits && !targetEmail) {
+      throw Object.assign(new Error('Provide a phone number or email address for the caregiver.'), { status: 400 });
+    }
+    if (phoneDigits && (normalizeDigits(countryCode + rawPhone).length < 8 || normalizeDigits(countryCode + rawPhone).length > 15)) {
+      throw Object.assign(new Error('Enter a valid phone number with country code (8 to 15 digits).'), { status: 400 });
+    }
+
+    const sameAsPhone = input.whatsappSameAsPhone !== false;
+    const whatsappNum = sameAsPhone ? rawPhone : (input.whatsappNumber || rawPhone).trim();
+
+    const matchedCg = targetEmail
+      ? Object.values(store.users).find(
+          (u) => u.email.toLowerCase() === targetEmail && u.role === 'caregiver',
+        )
+      : undefined;
+
+    const caregiverId = matchedCg?.id || makeId('cg');
+    const prefLang: CaregiverLanguage =
+      input.preferredLanguage === 'hi' || input.preferredLanguage === 'pa' ? input.preferredLanguage : 'en';
+
+    const mergedPrefs: CaregiverAlertPreferences = {
+      repeatedMissedThreshold: input.alertPreferences?.repeatedMissedThreshold ?? 2,
+      notifyOnRefillNeeded: input.alertPreferences?.notifyOnRefillNeeded ?? true,
+      notifyOnDadiNaniShare: input.alertPreferences?.notifyOnDadiNaniShare ?? true,
+      repeatedMissedDoses: input.alertPreferences?.repeatedMissedDoses ?? true,
+      supplyRunningLow: input.alertPreferences?.supplyRunningLow ?? true,
+      upcomingRefillDate: input.alertPreferences?.upcomingRefillDate ?? true,
+      caregiverInvitation: input.alertPreferences?.caregiverInvitation ?? true,
+      patientRequestedAssistance: input.alertPreferences?.patientRequestedAssistance ?? true,
+    };
+
     store.connections.unshift({
       id: makeId('conn'),
       patientId,
-      caregiverId: matchedCg?.id || makeId('cg'),
+      caregiverId,
       caregiverUserId: matchedCg?.id,
-      caregiverEmail: targetEmail,
-      caregiverName: input.caregiverName?.trim() || matchedCg?.fullName || targetEmail,
-      relationship: input.relationship,
+      caregiverEmail: targetEmail || undefined,
+      caregiverName: input.caregiverName.trim(),
+      phoneCountryCode: countryCode,
+      phoneNumber: rawPhone || undefined,
+      whatsappSameAsPhone: sameAsPhone,
+      whatsappNumber: whatsappNum || undefined,
+      preferredLanguage: prefLang,
+      relationship: input.relationship || 'Other',
       contactPriority: input.contactPriority || 'secondary',
       status: 'invited',
       requestedBy: 'patient',
@@ -1167,13 +1245,21 @@ export function mutateInviteOrRequestCaregiver(
         viewHistoryAndReports: false,
         viewClinicianNotes: false,
       },
-      alertPreferences: {
-        repeatedMissedThreshold: 2,
-        notifyOnRefillNeeded: true,
-        notifyOnDadiNaniShare: true,
-      },
+      alertPreferences: mergedPrefs,
       invitedAt: nowIso.slice(0, 10),
     });
+
+    store.history.unshift({
+      id: makeId('hist'),
+      patientId,
+      category: 'caregiver_alert',
+      title: `Caregiver contact added: ${input.caregiverName.trim()}`,
+      details: `Invitation prepared for ${input.relationship} (${countryCode} ${rawPhone || targetEmail}). Pending caregiver acceptance.`,
+      actorName: user.fullName,
+      actorRole: user.role,
+      timestamp: nowIso,
+    });
+
     persistStore();
     return;
   }
@@ -1416,3 +1502,474 @@ export function mutateEnrollHospitalPatient(
   });
   persistStore();
 }
+
+export function mutateUpdateCaregiverContact(
+  user: AuthUser,
+  input: {
+    connectionId: string;
+    caregiverName?: string;
+    caregiverEmail?: string;
+    phoneCountryCode?: string;
+    phoneNumber?: string;
+    whatsappSameAsPhone?: boolean;
+    whatsappNumber?: string;
+    preferredLanguage?: CaregiverLanguage;
+    relationship?: RelationshipLabel;
+    contactPriority?: 'primary' | 'secondary';
+    permissions?: CaregiverPermissions;
+    alertPreferences?: Partial<CaregiverAlertPreferences>;
+  },
+): void {
+  const conn = store.connections.find((c) => c.id === input.connectionId);
+  if (!conn) {
+    throw Object.assign(new Error('Caregiver contact not found.'), { status: 404 });
+  }
+  if (user.role !== 'patient' || user.linkedPatientId !== conn.patientId) {
+    throw Object.assign(new Error('Only the patient can edit caregiver contact details.'), {
+      status: 403,
+    });
+  }
+
+  if (typeof input.caregiverName === 'string' && input.caregiverName.trim()) {
+    conn.caregiverName = input.caregiverName.trim();
+  }
+  if (typeof input.caregiverEmail === 'string') {
+    conn.caregiverEmail = input.caregiverEmail.trim().toLowerCase() || undefined;
+  }
+  if (typeof input.phoneCountryCode === 'string') {
+    conn.phoneCountryCode = input.phoneCountryCode.trim() || '+1';
+  }
+  if (typeof input.phoneNumber === 'string') {
+    const rawPhone = input.phoneNumber.trim();
+    const digits = normalizeDigits((conn.phoneCountryCode || '+1') + rawPhone);
+    if (rawPhone && (digits.length < 8 || digits.length > 15)) {
+      throw Object.assign(new Error('Enter a valid phone number with country code (8 to 15 digits).'), {
+        status: 400,
+      });
+    }
+    conn.phoneNumber = rawPhone || undefined;
+  }
+  if (typeof input.whatsappSameAsPhone === 'boolean') {
+    conn.whatsappSameAsPhone = input.whatsappSameAsPhone;
+  }
+  if (conn.whatsappSameAsPhone) {
+    conn.whatsappNumber = conn.phoneNumber;
+  } else if (typeof input.whatsappNumber === 'string') {
+    conn.whatsappNumber = input.whatsappNumber.trim() || conn.phoneNumber;
+  }
+  if (
+    input.preferredLanguage === 'en' ||
+    input.preferredLanguage === 'hi' ||
+    input.preferredLanguage === 'pa'
+  ) {
+    conn.preferredLanguage = input.preferredLanguage;
+  }
+  if (input.relationship) conn.relationship = input.relationship;
+  if (input.contactPriority) conn.contactPriority = input.contactPriority;
+  if (input.permissions) conn.permissions = input.permissions;
+  if (input.alertPreferences) {
+    conn.alertPreferences = {
+      ...conn.alertPreferences,
+      ...input.alertPreferences,
+    };
+  }
+
+  persistStore();
+}
+
+export function mutateRemoveCaregiverContact(user: AuthUser, connectionId: string): void {
+  const idx = store.connections.findIndex((c) => c.id === connectionId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Caregiver contact not found.'), { status: 404 });
+  }
+  const conn = store.connections[idx];
+  if (user.role !== 'patient' || user.linkedPatientId !== conn.patientId) {
+    throw Object.assign(new Error('Only the patient can remove caregiver contacts.'), {
+      status: 403,
+    });
+  }
+  store.connections.splice(idx, 1);
+  store.history.unshift({
+    id: makeId('hist'),
+    patientId: conn.patientId,
+    category: 'caregiver_alert',
+    title: `Caregiver contact removed: ${conn.caregiverName}`,
+    details: `Removed ${conn.relationship} contact and revoked Care Circle data sharing.`,
+    actorName: user.fullName,
+    actorRole: user.role,
+    timestamp: new Date().toISOString(),
+  });
+  persistStore();
+}
+
+export function getMessagingProviderStatus(): MessagingProviderStatus {
+  const whatsappConfigured = Boolean(
+    (process.env.WHATSAPP_ACCESS_TOKEN || '').trim() &&
+      (process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim(),
+  );
+  const smsConfigured = Boolean(
+    (process.env.TWILIO_ACCOUNT_SID || '').trim() &&
+      (process.env.TWILIO_AUTH_TOKEN || '').trim() &&
+      (process.env.TWILIO_FROM_NUMBER || '').trim(),
+  );
+
+  return {
+    whatsappProviderConfigured: whatsappConfigured,
+    smsProviderConfigured: smsConfigured,
+    whatsappProviderLabel: whatsappConfigured
+      ? 'WhatsApp Business Cloud API configured'
+      : 'Not configured (manual WhatsApp launch ready)',
+    smsProviderLabel: smsConfigured
+      ? 'Twilio Programmable SMS configured'
+      : 'Not configured (manual SMS app launch ready)',
+  };
+}
+
+export async function mutateDispatchCaregiverAlert(
+  user: AuthUser,
+  input: {
+    patientId: string;
+    connectionId?: string;
+    caregiverId?: string;
+    caregiverName?: string;
+    alertType: CareAlertType;
+    channel: CareAlertChannel;
+    recipientPhone?: string;
+    title: string;
+    reason: string;
+    messageBody: string;
+    severity?: 'attention' | 'urgent';
+    deliveryMode: 'draft' | 'opened_messaging_app' | 'automated';
+  },
+): Promise<{
+  alert: CareAlert;
+  providerConfirmed: boolean;
+  providerConfigured: boolean;
+  error?: string;
+}> {
+  assertCanAccessPatient(user, input.patientId);
+
+  const conn =
+    (input.connectionId ? store.connections.find((c) => c.id === input.connectionId) : undefined) ??
+    (input.caregiverId
+      ? store.connections.find(
+          (c) => c.patientId === input.patientId && c.caregiverId === input.caregiverId,
+        )
+      : undefined);
+
+  if (conn && conn.patientId !== input.patientId) {
+    throw Object.assign(new Error('Caregiver connection does not match patient.'), { status: 403 });
+  }
+
+  // Enforce consent boundary strictly on backend: unapproved contacts NEVER receive sensitive medication details
+  if (
+    conn &&
+    conn.status !== 'accepted' &&
+    input.alertType !== 'caregiver_invitation'
+  ) {
+    throw Object.assign(
+      new Error(
+        'Consent required: caregiver invitation must be accepted by patient consent before sharing medication alerts.',
+      ),
+      { status: 403 },
+    );
+  }
+
+  if (
+    conn &&
+    conn.status === 'accepted' &&
+    !conn.permissions.receiveDoseAlerts &&
+    input.alertType !== 'caregiver_invitation' &&
+    input.alertType !== 'patient_assistance'
+  ) {
+    throw Object.assign(
+      new Error('Receive dose alerts consent scope is disabled for this caregiver.'),
+      { status: 403 },
+    );
+  }
+
+  const nowIso = new Date().toISOString();
+  const recipientName = conn?.caregiverName || input.caregiverName || 'Caregiver';
+  const resolvedPhone =
+    input.recipientPhone ||
+    (conn?.phoneNumber ? `${conn.phoneCountryCode || '+1'} ${conn.phoneNumber}` : undefined);
+
+  const channelTitle =
+    input.channel === 'whatsapp'
+      ? `WhatsApp to ${recipientName}`
+      : input.channel === 'sms'
+        ? `SMS to ${recipientName}`
+        : `In-App Alert for ${recipientName}`;
+
+  if (input.deliveryMode === 'draft' || input.deliveryMode === 'opened_messaging_app') {
+    const alert: CareAlert = {
+      id: makeId('alert'),
+      patientId: input.patientId,
+      caregiverId: conn?.caregiverId || input.caregiverId,
+      caregiverName: recipientName,
+      alertType: input.alertType,
+      channel: input.channel,
+      recipientPhone: resolvedPhone,
+      messageBody: input.messageBody,
+      providerConfirmed: false,
+      title: input.title,
+      reason: input.reason,
+      severity: input.severity ?? 'attention',
+      deliveryState: input.deliveryMode,
+      simulated: false,
+      channelLabel:
+        input.deliveryMode === 'opened_messaging_app'
+          ? `${channelTitle} (Opened Messaging App)`
+          : `${channelTitle} (Draft)`,
+      createdAt: nowIso,
+    };
+    store.alerts.unshift(alert);
+    store.history.unshift({
+      id: makeId('hist'),
+      patientId: input.patientId,
+      category: 'caregiver_alert',
+      title:
+        input.deliveryMode === 'opened_messaging_app'
+          ? `Prepared & opened ${input.channel.toUpperCase()} message to ${recipientName}`
+          : `Saved draft ${input.channel.toUpperCase()} alert for ${recipientName}`,
+      details: input.title,
+      actorName: user.fullName,
+      actorRole: user.role,
+      timestamp: nowIso,
+      sourceId: alert.id,
+    });
+    persistStore();
+    return {
+      alert,
+      providerConfirmed: false,
+      providerConfigured: false,
+    };
+  }
+
+  // Automated provider dispatch — NEVER claim 'sent' or 'delivered' unless provider confirms it
+  const providerStatus = getMessagingProviderStatus();
+  const toDigits = normalizeDigits(resolvedPhone);
+
+  if (input.channel === 'whatsapp') {
+    if (!providerStatus.whatsappProviderConfigured) {
+      return {
+        alert: {
+          id: 'unavailable',
+          patientId: input.patientId,
+          title: input.title,
+          reason: input.reason,
+          severity: input.severity ?? 'attention',
+          deliveryState: 'failed',
+          simulated: false,
+          channelLabel: channelTitle,
+          createdAt: nowIso,
+          providerConfirmed: false,
+          providerError: 'WhatsApp Business Cloud API credentials are not configured on the server.',
+        },
+        providerConfirmed: false,
+        providerConfigured: false,
+        error:
+          'Automated WhatsApp delivery is unavailable because WhatsApp Business API credentials are not configured. Use manual "Send WhatsApp Message" instead.',
+      };
+    }
+
+    try {
+      const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID!;
+      const token = process.env.WHATSAPP_ACCESS_TOKEN!;
+      const waRes = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: toDigits,
+          type: 'text',
+          text: { body: input.messageBody },
+        }),
+      });
+      const waData = (await waRes.json().catch(() => ({}))) as {
+        messages?: Array<{ id?: string }>;
+        error?: { message?: string };
+      };
+      const confirmed = waRes.ok && Boolean(waData.messages?.[0]?.id);
+      const alert: CareAlert = {
+        id: makeId('alert'),
+        patientId: input.patientId,
+        caregiverId: conn?.caregiverId || input.caregiverId,
+        caregiverName: recipientName,
+        alertType: input.alertType,
+        channel: 'whatsapp',
+        recipientPhone: resolvedPhone,
+        messageBody: input.messageBody,
+        providerConfirmed: confirmed,
+        providerMessageId: waData.messages?.[0]?.id,
+        providerError: confirmed ? undefined : waData.error?.message || `HTTP ${waRes.status}`,
+        title: input.title,
+        reason: input.reason,
+        severity: input.severity ?? 'attention',
+        deliveryState: confirmed ? 'sent' : 'failed',
+        simulated: false,
+        channelLabel: channelTitle,
+        createdAt: nowIso,
+      };
+      store.alerts.unshift(alert);
+      persistStore();
+      return {
+        alert,
+        providerConfirmed: confirmed,
+        providerConfigured: true,
+        error: alert.providerError,
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'WhatsApp API call failed.';
+      const alert: CareAlert = {
+        id: makeId('alert'),
+        patientId: input.patientId,
+        caregiverId: conn?.caregiverId || input.caregiverId,
+        caregiverName: recipientName,
+        alertType: input.alertType,
+        channel: 'whatsapp',
+        recipientPhone: resolvedPhone,
+        messageBody: input.messageBody,
+        providerConfirmed: false,
+        providerError: msg,
+        title: input.title,
+        reason: input.reason,
+        severity: input.severity ?? 'attention',
+        deliveryState: 'failed',
+        simulated: false,
+        channelLabel: channelTitle,
+        createdAt: nowIso,
+      };
+      store.alerts.unshift(alert);
+      persistStore();
+      return { alert, providerConfirmed: false, providerConfigured: true, error: msg };
+    }
+  }
+
+  if (input.channel === 'sms') {
+    if (!providerStatus.smsProviderConfigured) {
+      return {
+        alert: {
+          id: 'unavailable',
+          patientId: input.patientId,
+          title: input.title,
+          reason: input.reason,
+          severity: input.severity ?? 'attention',
+          deliveryState: 'failed',
+          simulated: false,
+          channelLabel: channelTitle,
+          createdAt: nowIso,
+          providerConfirmed: false,
+          providerError: 'Twilio SMS credentials are not configured on the server.',
+        },
+        providerConfirmed: false,
+        providerConfigured: false,
+        error:
+          'Automated SMS delivery is unavailable because SMS provider credentials are not configured. Use manual "Send SMS" instead.',
+      };
+    }
+
+    try {
+      const sid = process.env.TWILIO_ACCOUNT_SID!;
+      const auth = process.env.TWILIO_AUTH_TOKEN!;
+      const fromNum = process.env.TWILIO_FROM_NUMBER!;
+      const formBody = new URLSearchParams({
+        To: `+${toDigits}`,
+        From: fromNum,
+        Body: input.messageBody,
+      });
+      const twRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${sid}:${auth}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formBody.toString(),
+      });
+      const twData = (await twRes.json().catch(() => ({}))) as {
+        sid?: string;
+        message?: string;
+      };
+      const confirmed = twRes.ok && Boolean(twData.sid);
+      const alert: CareAlert = {
+        id: makeId('alert'),
+        patientId: input.patientId,
+        caregiverId: conn?.caregiverId || input.caregiverId,
+        caregiverName: recipientName,
+        alertType: input.alertType,
+        channel: 'sms',
+        recipientPhone: resolvedPhone,
+        messageBody: input.messageBody,
+        providerConfirmed: confirmed,
+        providerMessageId: twData.sid,
+        providerError: confirmed ? undefined : twData.message || `HTTP ${twRes.status}`,
+        title: input.title,
+        reason: input.reason,
+        severity: input.severity ?? 'attention',
+        deliveryState: confirmed ? 'sent' : 'failed',
+        simulated: false,
+        channelLabel: channelTitle,
+        createdAt: nowIso,
+      };
+      store.alerts.unshift(alert);
+      persistStore();
+      return {
+        alert,
+        providerConfirmed: confirmed,
+        providerConfigured: true,
+        error: alert.providerError,
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'SMS provider API call failed.';
+      const alert: CareAlert = {
+        id: makeId('alert'),
+        patientId: input.patientId,
+        caregiverId: conn?.caregiverId || input.caregiverId,
+        caregiverName: recipientName,
+        alertType: input.alertType,
+        channel: 'sms',
+        recipientPhone: resolvedPhone,
+        messageBody: input.messageBody,
+        providerConfirmed: false,
+        providerError: msg,
+        title: input.title,
+        reason: input.reason,
+        severity: input.severity ?? 'attention',
+        deliveryState: 'failed',
+        simulated: false,
+        channelLabel: channelTitle,
+        createdAt: nowIso,
+      };
+      store.alerts.unshift(alert);
+      persistStore();
+      return { alert, providerConfirmed: false, providerConfigured: true, error: msg };
+    }
+  }
+
+  // In-app alert
+  const inAppAlert: CareAlert = {
+    id: makeId('alert'),
+    patientId: input.patientId,
+    caregiverId: conn?.caregiverId || input.caregiverId,
+    caregiverName: recipientName,
+    alertType: input.alertType,
+    channel: 'in_app',
+    recipientPhone: resolvedPhone,
+    messageBody: input.messageBody,
+    providerConfirmed: true,
+    title: input.title,
+    reason: input.reason,
+    severity: input.severity ?? 'attention',
+    deliveryState: 'delivered',
+    simulated: false,
+    channelLabel: `In-App Care Circle notification for ${recipientName}`,
+    createdAt: nowIso,
+  };
+  store.alerts.unshift(inAppAlert);
+  persistStore();
+  return { alert: inAppAlert, providerConfirmed: true, providerConfigured: true };
+}
+

@@ -86,25 +86,45 @@ export function mapAlertToContractRecord(
   patients: Patient[],
 ): CaregiverAlertRecord {
   const pat = patients.find((p) => p.id === alert.patientId);
-  const lower = `${alert.title} ${alert.reason}`.toLowerCase();
-  const alertType: CaregiverAlertRecord['alert_type'] =
-    lower.includes('refill') || lower.includes('supply') || lower.includes('remaining')
-      ? 'refill_countdown'
-      : lower.includes('check-in')
-        ? 'checkin'
-        : 'missed_dose';
+  const lower = `${alert.title} ${alert.reason} ${alert.channelLabel}`.toLowerCase();
+
+  let alertType: CaregiverAlertRecord['alert_type'] = 'missed_dose';
+  if (alert.alertType === 'caregiver_invitation') {
+    alertType = 'caregiver_invitation';
+  } else if (alert.alertType === 'patient_assistance') {
+    alertType = 'patient_assistance';
+  } else if (
+    alert.alertType === 'supply_running_low' ||
+    alert.alertType === 'upcoming_refill' ||
+    lower.includes('refill') ||
+    lower.includes('supply') ||
+    lower.includes('remaining')
+  ) {
+    alertType = 'refill_countdown';
+  } else if (lower.includes('check-in') || lower.includes('assistance')) {
+    alertType = 'checkin';
+  }
+
+  const channelKind: 'whatsapp' | 'sms' | 'in_app' =
+    alert.channel ??
+    (lower.includes('whatsapp') ? 'whatsapp' : lower.includes('sms') ? 'sms' : 'in_app');
 
   return {
     id: alert.id,
     patient_id: alert.patientId,
     patient_name: pat?.name ?? 'Patient',
     caregiver_id: alert.caregiverId,
+    caregiver_name: alert.caregiverName,
     alert_type: alertType,
     title: alert.title,
     reason: alert.reason,
     severity: alert.severity,
     delivery_status: alert.deliveryState,
     channel: alert.channelLabel,
+    channel_kind: channelKind,
+    recipient_phone: alert.recipientPhone,
+    message_body: alert.messageBody,
+    provider_confirmed: alert.providerConfirmed,
     simulated: alert.simulated,
     created_at: alert.createdAt,
     acknowledged_at: alert.acknowledgedAt,

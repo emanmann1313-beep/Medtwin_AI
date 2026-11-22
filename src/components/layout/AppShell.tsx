@@ -125,12 +125,12 @@ export function AppShell({
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col border-r border-[#E6E0D8] bg-[#FFFFFF] text-[#20243A] dark:border-[#2B314D] dark:bg-[#171B2E] dark:text-[#F7F5F0] transition-colors duration-200">
-      <div className="flex items-center justify-between px-4 py-5 border-b border-[#E6E0D8] dark:border-[#2B314D]">
+    <div className="flex h-full flex-col border-r border-[#334155] bg-[#101B30] text-[#F8FAFC] transition-colors duration-200">
+      <div className="flex items-center justify-between px-4 py-5 border-b border-[#334155]">
         {!collapsed ? (
           <Link to="/" className="min-w-0 rounded-md">
             <MedTwinLogo />
-            <p className="mt-1 text-[11px] text-[#5C627D] dark:text-[#A3A9C2] truncate">
+            <p className="mt-1 text-[11px] text-[#A8B8CC] truncate">
               Medication care, unified
             </p>
           </Link>
@@ -144,7 +144,7 @@ export function AppShell({
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden lg:inline-flex rounded-lg p-1.5 text-[#5C627D] hover:bg-[#F5E5EC]/70 hover:text-[#20243A] dark:text-[#A3A9C2] dark:hover:bg-[#2B314D]/60 dark:hover:text-[#F7F5F0] cursor-pointer"
+          className="hidden lg:inline-flex rounded-lg p-1.5 text-[#A8B8CC] hover:bg-[#223451] hover:text-[#F8FAFC] cursor-pointer"
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
@@ -153,7 +153,7 @@ export function AppShell({
           type="button"
           onClick={() => setMobileNavOpen(false)}
           aria-label="Close navigation menu"
-          className="lg:hidden rounded-lg p-1.5 text-[#5C627D] hover:bg-[#F5E5EC]/70 dark:text-[#A3A9C2]"
+          className="lg:hidden rounded-lg p-1.5 text-[#A8B8CC] hover:bg-[#223451] hover:text-[#F8FAFC]"
         >
           <X className="h-5 w-5" />
         </button>
@@ -161,9 +161,9 @@ export function AppShell({
 
       {/* Real User Identity Badge OR Isolated Demo Switcher */}
       {!collapsed && isRealAccountMode && user && (
-        <div className="px-4 py-4 border-b border-[#E6E0D8] dark:border-[#2B314D] space-y-1.5">
+        <div className="px-4 py-4 border-b border-[#334155] space-y-1.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-[#7956C8] dark:text-[#A58AE8]">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[#8B5CF6]">
               {user.role.replace('_', ' ')}
             </span>
             {(user.role === 'doctor' || user.role === 'hospital_admin') && (
@@ -171,8 +171,8 @@ export function AppShell({
                 className={cn(
                   'inline-flex items-center gap-1 text-[10px] font-semibold',
                   user.verificationStatus === 'verified'
-                    ? 'text-[#24A99B] dark:text-[#2DD4BF]'
-                    : 'text-amber-700 dark:text-amber-400',
+                    ? 'text-[#34D399]'
+                    : 'text-[#FBBF24]',
                 )}
               >
                 {user.verificationStatus === 'verified' ? (
@@ -184,29 +184,29 @@ export function AppShell({
               </span>
             )}
           </div>
-          <p className="text-sm font-bold text-[#20243A] dark:text-[#F7F5F0] truncate">
+          <p className="text-sm font-bold text-[#F8FAFC] truncate">
             {user.fullName}
           </p>
-          <p className="text-[11px] text-[#5C627D] dark:text-[#A3A9C2] truncate">{user.email}</p>
+          <p className="text-[11px] text-[#A8B8CC] truncate">{user.email}</p>
         </div>
       )}
 
       {!collapsed && isDemoMode && !isRealAccountMode && (
-        <div className="px-4 py-4 border-b border-[#E6E0D8] dark:border-[#2B314D]">
+        <div className="px-4 py-4 border-b border-[#334155]">
           <div className="flex items-center justify-between mb-1.5">
             <label
               htmlFor="demo-role-switcher"
-              className="text-[11px] font-semibold tracking-wide text-[#24A99B] dark:text-[#2DD4BF]"
+              className="text-[11px] font-semibold tracking-wide text-[#2DD4BF]"
             >
               Interactive demo
             </label>
-            <span className="text-[10px] text-[#5C627D] dark:text-[#A3A9C2]">Synthetic data</span>
+            <span className="text-[10px] text-[#A8B8CC]">Synthetic data</span>
           </div>
           <select
             id="demo-role-switcher"
             value={activeDemoAccount.id}
             onChange={(e) => handleRoleSwitch(e.target.value)}
-            className="w-full rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] px-3 py-2 text-xs font-medium text-[#20243A] focus:outline-none focus:ring-2 focus:ring-[#7956C8] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+            className="w-full rounded-xl border border-[#334155] bg-[#1A2740] px-3 py-2 text-xs font-medium text-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
           >
             {DEMO_ACCOUNTS.map((acc) => (
               <option key={acc.id} value={acc.id}>
@@ -214,7 +214,7 @@ export function AppShell({
               </option>
             ))}
           </select>
-          <p className="mt-1.5 text-[11px] text-[#5C627D] dark:text-[#A3A9C2] leading-snug">
+          <p className="mt-1.5 text-[11px] text-[#A8B8CC] leading-snug">
             {activeDemoAccount.subtitle}
           </p>
         </div>
@@ -236,34 +236,38 @@ export function AppShell({
               onClick={() => setMobileNavOpen(false)}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap',
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all whitespace-nowrap border',
                   isActive
-                    ? 'bg-[#D8C5E8]/45 text-[#7956C8] font-semibold dark:bg-[#7956C8]/25 dark:text-[#F7F5F0]'
-                    : 'text-[#5C627D] hover:bg-[#FAF8F5] hover:text-[#20243A] dark:text-[#A3A9C2] dark:hover:bg-[#101322] dark:hover:text-[#F7F5F0]',
+                    ? 'bg-[#8B5CF6]/20 border-[#8B5CF6]/45 text-[#F8FAFC] font-semibold shadow-[0_0_18px_rgba(139,92,246,0.22)]'
+                    : 'border-transparent text-[#A8B8CC] hover:bg-[#1A2740] hover:text-[#F8FAFC]',
                   collapsed && 'justify-center px-2',
                 )
               }
               title={collapsed ? item.label : undefined}
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span className="truncate">{item.label}</span>}
+              {({ isActive }) => (
+                <>
+                  <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-[#2DD4BF]' : 'text-[#A8B8CC]')} />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </>
+              )}
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="border-t border-[#E6E0D8] p-3 space-y-2 dark:border-[#2B314D]">
+      <div className="border-t border-[#334155] p-3 space-y-2">
         {isDemoMode && !isRealAccountMode && (
           <button
             type="button"
             onClick={resetDemo}
             className={cn(
-              'flex w-full items-center gap-2.5 rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] px-3 py-2 text-xs font-medium text-[#20243A] hover:bg-[#F5E5EC]/60 transition-colors cursor-pointer dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0] dark:hover:bg-[#2B314D]/60',
+              'flex w-full items-center gap-2.5 rounded-xl border border-[#334155] bg-[#1A2740] px-3 py-2 text-xs font-medium text-[#F8FAFC] hover:bg-[#223451] transition-colors cursor-pointer',
               collapsed && 'justify-center px-2',
             )}
             title="Reset synthetic demo data"
           >
-            <RotateCcw className="h-3.5 w-3.5 shrink-0" />
+            <RotateCcw className="h-3.5 w-3.5 shrink-0 text-[#2DD4BF]" />
             {!collapsed && <span>Reset demo</span>}
           </button>
         )}
@@ -272,12 +276,12 @@ export function AppShell({
           type="button"
           onClick={handleSignOut}
           className={cn(
-            'flex w-full items-center gap-2.5 rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 py-2 text-xs font-semibold text-[#20243A] hover:bg-[#F5E5EC]/60 transition-colors cursor-pointer dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0] dark:hover:bg-[#2B314D]/60',
+            'flex w-full items-center gap-2.5 rounded-xl border border-[#334155] bg-[#1A2740] px-3 py-2 text-xs font-semibold text-[#F8FAFC] hover:bg-[#223451] transition-colors cursor-pointer',
             collapsed && 'justify-center px-2',
           )}
           title={isRealAccountMode ? 'Sign Out' : 'Exit Demo'}
         >
-          <LogOut className="h-3.5 w-3.5 shrink-0 text-[#7956C8] dark:text-[#A58AE8]" />
+          <LogOut className="h-3.5 w-3.5 shrink-0 text-[#8B5CF6]" />
           {!collapsed && <span>{isRealAccountMode ? 'Sign Out' : 'Exit Demo'}</span>}
         </button>
       </div>
@@ -287,7 +291,7 @@ export function AppShell({
   return (
     <div
       className={cn(
-        'min-h-screen flex bg-[#FAF8F5] text-[#20243A] dark:bg-[#101322] dark:text-[#F7F5F0] transition-colors duration-200',
+        'min-h-screen flex bg-[#0B1220] bg-[radial-gradient(ellipse_at_top_right,rgba(139,92,246,0.12),transparent_48%),radial-gradient(ellipse_at_bottom_left,rgba(45,212,191,0.08),transparent_45%)] text-[#F8FAFC] transition-colors duration-200',
         dadiNaniMode && 'text-[16px]',
       )}
     >
@@ -305,7 +309,7 @@ export function AppShell({
       {mobileNavOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <div
-            className="fixed inset-0 bg-[#101322]/60"
+            className="fixed inset-0 bg-[#0B1220]/75 backdrop-blur-sm"
             onClick={() => setMobileNavOpen(false)}
           />
           <div className="relative z-10 w-72 max-w-[85vw] h-full">{sidebarContent}</div>
@@ -314,22 +318,22 @@ export function AppShell({
 
       {/* Main Content Area */}
       <div className="flex min-w-0 flex-1 flex-col pb-20">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-[#E6E0D8] bg-[#FFFFFF]/95 backdrop-blur px-4 py-3.5 sm:px-6 lg:px-8 dark:border-[#2B314D] dark:bg-[#171B2E]/95 transition-colors duration-200">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-[#334155] bg-[#101B30]/95 backdrop-blur px-4 py-3.5 sm:px-6 lg:px-8 transition-colors duration-200">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open navigation menu"
-              className="lg:hidden rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] p-2 text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+              className="lg:hidden rounded-xl border border-[#334155] bg-[#1A2740] p-2 text-[#F8FAFC] hover:bg-[#223451]"
             >
               <Menu className="h-5 w-5" />
             </button>
             <div className="min-w-0">
-              <h1 className="font-display text-lg sm:text-xl font-bold tracking-tight text-[#20243A] dark:text-[#F7F5F0] truncate">
+              <h1 className="font-display text-lg sm:text-xl font-bold tracking-tight text-[#F8FAFC] truncate">
                 {title}
               </h1>
               {subtitle && (
-                <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2] truncate">{subtitle}</p>
+                <p className="text-xs text-[#A8B8CC] truncate">{subtitle}</p>
               )}
             </div>
           </div>
@@ -344,13 +348,13 @@ export function AppShell({
                   if (next) navigate('/dadi-nani');
                 }}
                 className={cn(
-                  'hidden sm:inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer',
+                  'hidden sm:inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer',
                   dadiNaniMode
-                    ? 'border-[#7956C8] bg-[#D8C5E8]/40 text-[#7956C8] dark:border-[#A58AE8] dark:bg-[#7956C8]/25 dark:text-[#F7F5F0]'
-                    : 'border-[#E6E0D8] bg-[#FFFFFF] text-[#20243A] hover:bg-[#FAF8F5] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]',
+                    ? 'border-[#8B5CF6]/60 bg-[#8B5CF6]/20 text-[#F8FAFC] shadow-[0_0_16px_rgba(139,92,246,0.22)]'
+                    : 'border-[#334155] bg-[#1A2740] text-[#F8FAFC] hover:bg-[#223451]',
                 )}
               >
-                <HeartHandshake className="h-4 w-4 text-[#7956C8] dark:text-[#A58AE8]" />
+                <HeartHandshake className="h-4 w-4 text-[#8B5CF6]" />
                 <span>Dadi-Nani Mode{dadiNaniMode ? ' · On' : ''}</span>
               </button>
             )}
@@ -360,7 +364,7 @@ export function AppShell({
               onClick={toggleTheme}
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               aria-pressed={theme === 'dark'}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 py-2 text-xs font-semibold text-[#20243A] hover:bg-[#FAF8F5] transition-colors whitespace-nowrap shrink-0 cursor-pointer dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#334155] bg-[#1A2740] px-3 py-2 text-xs font-semibold text-[#F8FAFC] hover:bg-[#223451] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               {theme === 'dark' ? (
                 <>
@@ -369,7 +373,7 @@ export function AppShell({
                 </>
               ) : (
                 <>
-                  <Moon className="h-4 w-4 text-[#7956C8]" />
+                  <Moon className="h-4 w-4 text-[#8B5CF6]" />
                   <span className="hidden sm:inline">Dark mode</span>
                 </>
               )}
@@ -378,13 +382,13 @@ export function AppShell({
         </header>
 
         {/* Active Context Banner */}
-        <div className="border-b border-[#E6E0D8] bg-[#FFFFFF]/75 px-4 py-2 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-2 text-xs text-[#5C627D] dark:border-[#2B314D] dark:bg-[#171B2E]/60 dark:text-[#A3A9C2]">
+        <div className="border-b border-[#334155] bg-[#101B30]/75 px-4 py-2 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-2 text-xs text-[#A8B8CC]">
           {isDemoMode && !isRealAccountMode ? (
             <span>
               Interactive Demo Mode (synthetic data) —{' '}
               <Link
                 to="/get-started"
-                className="font-semibold text-[#7956C8] hover:underline dark:text-[#A58AE8]"
+                className="font-semibold text-[#2DD4BF] hover:underline"
               >
                 Create a real account
               </Link>
@@ -392,7 +396,7 @@ export function AppShell({
           ) : (
             <span>Medication care, unified.</span>
           )}
-          <span className="font-mono text-[11px] tabular-nums">
+          <span className="font-mono text-[11px] tabular-nums text-[#A8B8CC]">
             {isRealAccountMode && user
               ? `${user.fullName} · ${
                   hasPatients && activeRole !== 'doctor' && activeRole !== 'hospital_admin'

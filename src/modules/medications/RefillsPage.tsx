@@ -43,19 +43,19 @@ export function RefillsPage() {
       <Card>
         <CardContent className="pt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#24A99B] dark:text-[#2DD4BF]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#2DD4BF]">
               <Package className="h-4 w-4" />
               <span>Smart Refill Countdown · {activePatient.name}</span>
             </div>
-            <h2 className="font-display text-2xl font-bold text-[#20243A] dark:text-[#F7F5F0]">
+            <h2 className="font-display text-2xl font-bold text-[#F8FAFC]">
               Medication Refills &amp; Supply Readiness
             </h2>
-            <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="text-sm text-[#A8B8CC]">
               Calculated strictly from recorded remaining stock and daily scheduled doses. Critical threshold &le;2 days, warning &le;7 days.
             </p>
           </div>
           <Button type="button" variant="outline" onClick={() => navigate('/digital-twin')}>
-            <Activity className="h-4 w-4 text-[#7956C8] dark:text-[#A58AE8]" />
+            <Activity className="h-4 w-4 text-[#8B5CF6]" />
             <span>Model refill delay in Digital Twin</span>
           </Button>
         </CardContent>
@@ -69,15 +69,15 @@ export function RefillsPage() {
               className={cn(
                 'text-3xl font-bold tabular-nums',
                 criticalCount > 0
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-[#20243A] dark:text-[#F7F5F0]',
+                  ? 'text-[#FB7185]'
+                  : 'text-[#F8FAFC]',
               )}
             >
               {criticalCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="text-xs text-[#A8B8CC]">
               Immediate pharmacy pickup recommended
             </p>
           </CardContent>
@@ -90,15 +90,15 @@ export function RefillsPage() {
               className={cn(
                 'text-3xl font-bold tabular-nums',
                 warningCount > 0
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-[#20243A] dark:text-[#F7F5F0]',
+                  ? 'text-[#FBBF24]'
+                  : 'text-[#F8FAFC]',
               )}
             >
               {warningCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="text-xs text-[#A8B8CC]">
               Schedule refill order this week
             </p>
           </CardContent>
@@ -107,12 +107,12 @@ export function RefillsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Healthy Supply (&gt; 7 days / PRN)</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-[#24A99B] dark:text-[#2DD4BF]">
+            <CardTitle className="text-3xl font-bold tabular-nums text-[#34D399]">
               {nominalCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="text-xs text-[#A8B8CC]">
               No near-term depletion expected
             </p>
           </CardContent>
@@ -128,11 +128,11 @@ export function RefillsPage() {
         </CardHeader>
         <CardContent>
           {forecasts.length === 0 ? (
-            <p className="py-10 text-center text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="py-10 text-center text-sm text-[#A8B8CC]">
               No active medications recorded yet.
             </p>
           ) : (
-            <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+            <div className="divide-y divide-[#334155]">
               {forecasts.map((item) => {
                 const isCritical = item.daysRemaining !== null && item.daysRemaining <= 2;
                 const isWarning =
@@ -148,24 +148,24 @@ export function RefillsPage() {
                   >
                     <div className="space-y-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                        <h4 className="text-sm font-semibold text-[#F8FAFC]">
                           {item.medicationName} {item.strength}
                         </h4>
-                        <span aria-hidden="true" className="text-[#E6E0D8] dark:text-[#2B314D]">
+                        <span aria-hidden="true" className="text-[#334155]">
                           ·
                         </span>
                         {isCritical ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 dark:text-red-400">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#FB7185]">
                             <AlertTriangle className="h-3.5 w-3.5" />
                             <span>Critical ({item.daysRemaining}d left)</span>
                           </span>
                         ) : isWarning ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#FBBF24]">
                             <AlertTriangle className="h-3.5 w-3.5" />
                             <span>Warning ({item.daysRemaining}d left)</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#24A99B] dark:text-[#2DD4BF]">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#34D399]">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             <span>
                               {item.daysRemaining !== null ? `${item.daysRemaining}d left` : 'As needed'}
@@ -173,7 +173,7 @@ export function RefillsPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2] tabular-nums">
+                      <p className="text-xs text-[#A8B8CC] tabular-nums">
                         {item.remainingQuantity !== null
                           ? `${item.remainingQuantity} ${item.unitLabel} remaining`
                           : 'Remaining stock not recorded'}

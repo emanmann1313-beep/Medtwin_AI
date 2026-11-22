@@ -18,10 +18,10 @@ export function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5] text-[#20243A] dark:bg-[#101322] dark:text-[#F7F5F0]">
+      <div className="min-h-screen flex items-center justify-center bg-[#0B1220] text-[#F8FAFC]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-7 w-7 animate-spin text-[#7956C8] dark:text-[#A58AE8]" />
-          <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">Verifying session...</p>
+          <Loader2 className="h-7 w-7 animate-spin text-[#8B5CF6]" />
+          <p className="text-sm text-[#A8B8CC]">Verifying session...</p>
         </div>
       </div>
     );

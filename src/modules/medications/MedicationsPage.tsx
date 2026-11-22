@@ -79,11 +79,11 @@ export function MedicationsPage() {
     return (
       <Card>
         <CardContent className="py-12 px-6 text-center space-y-3">
-          <Pill className="mx-auto h-9 w-9 text-[#7956C8] dark:text-[#A58AE8]" />
-          <h3 className="font-display text-lg font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+          <Pill className="mx-auto h-9 w-9 text-[#8B5CF6]" />
+          <h3 className="font-display text-lg font-semibold text-[#F8FAFC]">
             No patient schedules available yet
           </h3>
-          <p className="mx-auto max-w-md text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+          <p className="mx-auto max-w-md text-xs text-[#A8B8CC]">
             {activeRole === 'caregiver'
               ? 'Medication schedules appear here once a patient approves your Care Circle request with schedule permissions.'
               : 'Add or scan a prescription to build your active medication schedule.'}
@@ -113,7 +113,7 @@ export function MedicationsPage() {
                 </Button>
               </Link>
             )}
-            <div className="inline-flex rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-1 dark:border-[#2B314D] dark:bg-[#101322]">
+            <div className="inline-flex rounded-xl border border-[#334155] bg-[#101B30] p-1">
               {(['all', 'active', 'completed', 'stopped'] as const).map((st) => (
                 <button
                   key={st}
@@ -122,8 +122,8 @@ export function MedicationsPage() {
                   className={cn(
                     'rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors cursor-pointer',
                     statusFilter === st
-                      ? 'bg-[#FFFFFF] text-[#20243A] shadow-xs dark:bg-[#171B2E] dark:text-[#F7F5F0]'
-                      : 'text-[#5C627D] hover:text-[#20243A] dark:text-[#A3A9C2] dark:hover:text-[#F7F5F0]',
+                      ? 'bg-[#8B5CF6] text-white shadow-[0_0_12px_rgba(139,92,246,0.28)]'
+                      : 'text-[#A8B8CC] hover:text-[#F8FAFC]',
                   )}
                 >
                   {st}
@@ -136,7 +136,7 @@ export function MedicationsPage() {
         <CardContent>
           {patientMeds.length === 0 ? (
             <div className="py-10 text-center space-y-3">
-              <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+              <p className="text-sm text-[#A8B8CC]">
                 No medications recorded matching this filter.
               </p>
               {activeRole === 'patient' && (
@@ -155,56 +155,56 @@ export function MedicationsPage() {
                 return (
                   <div
                     key={med.id}
-                    className="flex flex-col justify-between rounded-2xl border border-[#E6E0D8] bg-[#FFFFFF] p-5 space-y-4 dark:border-[#2B314D] dark:bg-[#101322]/70"
+                    className="flex flex-col justify-between rounded-2xl border border-[#334155] bg-[#223451] p-5 space-y-4"
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-display text-base font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                          <h3 className="font-display text-base font-semibold text-[#F8FAFC]">
                             {med.name} {med.strength}
                           </h3>
-                          <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                          <p className="text-xs text-[#A8B8CC]">
                             {med.doseAndRoute} · Prescriber: {med.prescriberName ?? 'On file'}
                           </p>
                         </div>
                         <span
                           className={cn(
                             'text-xs font-semibold capitalize',
-                            med.status === 'active' && 'text-[#24A99B] dark:text-[#2DD4BF]',
-                            med.status === 'completed' && 'text-[#7956C8] dark:text-[#A58AE8]',
-                            med.status === 'stopped' && 'text-[#5C627D] dark:text-[#A3A9C2]',
+                            med.status === 'active' && 'text-[#2DD4BF]',
+                            med.status === 'completed' && 'text-[#8B5CF6]',
+                            med.status === 'stopped' && 'text-[#A8B8CC]',
                           )}
                         >
                           {med.status}
                         </span>
                       </div>
 
-                      <p className="text-sm text-[#20243A]/85 dark:text-[#F7F5F0]/85">{med.instructions}</p>
+                      <p className="text-sm text-[#F8FAFC]/90">{med.instructions}</p>
 
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#E6E0D8] dark:border-[#2B314D] text-xs">
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#334155] text-xs">
                         <div>
-                          <span className="text-[#5C627D] dark:text-[#A3A9C2] block">Scheduled times</span>
-                          <span className="font-mono text-[#20243A] dark:text-[#F7F5F0] tabular-nums">
+                          <span className="text-[#A8B8CC] block">Scheduled times</span>
+                          <span className="font-mono text-[#F8FAFC] tabular-nums">
                             {med.asNeeded
                               ? 'As needed (PRN)'
                               : med.scheduledTimes.map(formatTime12h).join(', ')}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[#5C627D] dark:text-[#A3A9C2] block">Start / End dates</span>
-                          <span className="text-[#20243A] dark:text-[#F7F5F0] tabular-nums">
+                          <span className="text-[#A8B8CC] block">Start / End dates</span>
+                          <span className="text-[#F8FAFC] tabular-nums">
                             {formatShortDate(med.startDate)} –{' '}
                             {med.endDate ? formatShortDate(med.endDate) : 'Ongoing'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[#5C627D] dark:text-[#A3A9C2] block">Remaining quantity</span>
+                          <span className="text-[#A8B8CC] block">Remaining quantity</span>
                           <span
                             className={cn(
                               'font-mono font-semibold tabular-nums',
                               forecast?.needsRefill
-                                ? 'text-amber-700 dark:text-amber-400'
-                                : 'text-[#20243A] dark:text-[#F7F5F0]',
+                                ? 'text-[#FBBF24]'
+                                : 'text-[#F8FAFC]',
                             )}
                           >
                             {typeof med.remainingQuantity === 'number'
@@ -213,8 +213,8 @@ export function MedicationsPage() {
                           </span>
                         </div>
                         <div>
-                          <span className="text-[#5C627D] dark:text-[#A3A9C2] block">Estimated refill date</span>
-                          <span className="text-[#20243A] dark:text-[#F7F5F0] tabular-nums">
+                          <span className="text-[#A8B8CC] block">Estimated refill date</span>
+                          <span className="text-[#F8FAFC] tabular-nums">
                             {forecast?.estimatedRefillDate
                               ? formatShortDate(forecast.estimatedRefillDate)
                               : 'Not calculable'}
@@ -223,7 +223,7 @@ export function MedicationsPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#E6E0D8] dark:border-[#2B314D]">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#334155]">
                       <Button
                         type="button"
                         variant="outline"
@@ -283,7 +283,7 @@ export function MedicationsPage() {
               Daily, weekly, and monthly records distinguishing taken, skipped, due, scheduled, and overdue/unconfirmed doses
             </CardDescription>
           </div>
-          <div className="inline-flex rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-1 dark:border-[#2B314D] dark:bg-[#101322]">
+          <div className="inline-flex rounded-xl border border-[#334155] bg-[#101B30] p-1">
             {(
               [
                 { id: 'daily', label: 'Daily' },
@@ -298,8 +298,8 @@ export function MedicationsPage() {
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                   horizon === tab.id
-                    ? 'bg-[#FFFFFF] text-[#20243A] shadow-xs dark:bg-[#171B2E] dark:text-[#F7F5F0]'
-                    : 'text-[#5C627D] hover:text-[#20243A] dark:text-[#A3A9C2] dark:hover:text-[#F7F5F0]',
+                    ? 'bg-[#8B5CF6] text-white shadow-[0_0_12px_rgba(139,92,246,0.28)]'
+                    : 'text-[#A8B8CC] hover:text-[#F8FAFC]',
                 )}
               >
                 {tab.label}
@@ -314,7 +314,7 @@ export function MedicationsPage() {
               buildDoseSlotsForDate(activePatient.id, dateStr, state.medications, state.doseLogs)
                 .length === 0,
           ) ? (
-            <p className="py-6 text-center text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="py-6 text-center text-xs text-[#A8B8CC]">
               No scheduled dose slots during this period.
             </p>
           ) : (
@@ -328,11 +328,11 @@ export function MedicationsPage() {
               if (slots.length === 0) return null;
 
               return (
-                <div key={dateStr} className="space-y-2 border-b border-[#E6E0D8] dark:border-[#2B314D] pb-4 last:border-0 last:pb-0">
-                  <h4 className="font-display text-xs font-semibold text-[#5C627D] dark:text-[#A3A9C2]">
+                <div key={dateStr} className="space-y-2 border-b border-[#334155] pb-4 last:border-0 last:pb-0">
+                  <h4 className="font-display text-xs font-semibold text-[#A8B8CC]">
                     {dateStr === todayStr ? `Today · ${formatShortDate(dateStr)}` : formatShortDate(dateStr)}
                   </h4>
-                  <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+                  <div className="divide-y divide-[#334155]">
                     {slots.map((slot) => {
                       const stateText =
                         slot.state === 'taken'
@@ -346,14 +346,14 @@ export function MedicationsPage() {
                                 : 'Scheduled';
                       const stateClass =
                         slot.state === 'taken'
-                          ? 'text-[#24A99B] dark:text-[#2DD4BF]'
+                          ? 'text-[#34D399]'
                           : slot.state === 'skipped'
-                            ? 'text-amber-700 dark:text-amber-400'
+                            ? 'text-[#FBBF24]'
                             : slot.state === 'overdue'
-                              ? 'text-red-600 dark:text-red-400'
+                              ? 'text-[#FB7185]'
                               : slot.state === 'due'
-                                ? 'text-[#7956C8] dark:text-[#A58AE8]'
-                                : 'text-[#5C627D] dark:text-[#A3A9C2]';
+                                ? 'text-[#8B5CF6]'
+                                : 'text-[#A8B8CC]';
 
                       return (
                         <div
@@ -361,21 +361,21 @@ export function MedicationsPage() {
                           className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <span className="w-20 shrink-0 font-mono text-xs font-semibold text-[#20243A] dark:text-[#F7F5F0] tabular-nums">
+                            <span className="w-20 shrink-0 font-mono text-xs font-semibold text-[#F8FAFC] tabular-nums">
                               {formatTime12h(slot.scheduledTime)}
                             </span>
                             <div className="min-w-0">
-                              <span className="text-sm font-medium text-[#20243A] dark:text-[#F7F5F0]">
+                              <span className="text-sm font-medium text-[#F8FAFC]">
                                 {slot.medication.name} {slot.medication.strength}
                               </span>
-                              <span aria-hidden="true" className="mx-2 text-[#E6E0D8] dark:text-[#2B314D]">
+                              <span aria-hidden="true" className="mx-2 text-[#334155]">
                                 ·
                               </span>
                               <span className={cn('text-xs font-semibold', stateClass)}>
                                 {stateText}
                               </span>
                               {slot.log?.skipReason && (
-                                <span className="ml-2 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                                <span className="ml-2 text-xs text-[#A8B8CC]">
                                   ({slot.log.skipReason})
                                 </span>
                               )}
@@ -468,7 +468,7 @@ export function MedicationsPage() {
             className="space-y-4"
           >
             <div>
-              <label htmlFor="med-skip-reason" className="block text-xs font-medium text-[#20243A] dark:text-[#F7F5F0] mb-1.5">
+              <label htmlFor="med-skip-reason" className="block text-xs font-medium text-[#F8FAFC] mb-1.5">
                 Optional reason
               </label>
               <Input

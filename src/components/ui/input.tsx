@@ -9,7 +9,7 @@ export const Input = React.forwardRef<
     type={type}
     ref={ref}
     className={cn(
-      'flex h-10 w-full rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3.5 py-2 text-sm text-[#20243A] placeholder:text-[#5C627D]/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7956C8] focus-visible:border-[#7956C8] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0] dark:placeholder:text-[#A3A9C2]/70 dark:focus-visible:ring-[#A58AE8] dark:focus-visible:border-[#A58AE8]',
+      'flex h-10 w-full rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3.5 py-2 text-sm text-[#20243A] placeholder:text-[#5C627D]/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7956C8] focus-visible:border-[#7956C8] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0] dark:placeholder:text-[#A3A9C2]/70 dark:focus-visible:ring-[#A58AE8] dark:focus-visible:border-[#A58AE8] dashboard-dark:border-[#334155] dashboard-dark:bg-[#0B1220]/85 dashboard-dark:text-[#F8FAFC] dashboard-dark:placeholder:text-[#A8B8CC]/70 dashboard-dark:focus-visible:ring-[#8B5CF6] dashboard-dark:focus-visible:border-[#8B5CF6]',
       className,
     )}
     {...props}
@@ -24,7 +24,7 @@ export const Textarea = React.forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      'flex min-h-[88px] w-full rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3.5 py-2.5 text-sm text-[#20243A] placeholder:text-[#5C627D]/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7956C8] focus-visible:border-[#7956C8] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0] dark:placeholder:text-[#A3A9C2]/70 dark:focus-visible:ring-[#A58AE8] dark:focus-visible:border-[#A58AE8]',
+      'flex min-h-[88px] w-full rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3.5 py-2.5 text-sm text-[#20243A] placeholder:text-[#5C627D]/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7956C8] focus-visible:border-[#7956C8] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0] dark:placeholder:text-[#A3A9C2]/70 dark:focus-visible:ring-[#A58AE8] dark:focus-visible:border-[#A58AE8] dashboard-dark:border-[#334155] dashboard-dark:bg-[#0B1220]/85 dashboard-dark:text-[#F8FAFC] dashboard-dark:placeholder:text-[#A8B8CC]/70 dashboard-dark:focus-visible:ring-[#8B5CF6] dashboard-dark:focus-visible:border-[#8B5CF6]',
       className,
     )}
     {...props}

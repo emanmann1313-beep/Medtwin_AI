@@ -13,24 +13,28 @@ export interface ProgressRingProps {
 
 const TONE_MAP = {
   teal: {
-    stroke: 'stroke-[#24A99B] dark:stroke-[#2DD4BF]',
-    text: 'text-[#24A99B] dark:text-[#2DD4BF]',
-    track: 'stroke-[#E6E0D8] dark:stroke-[#2B314D]',
+    stroke:
+      'stroke-[#24A99B] dark:stroke-[#2DD4BF] dashboard-dark:stroke-[#2DD4BF] dashboard-dark:drop-shadow-[0_0_9px_rgba(45,212,191,0.5)]',
+    text: 'text-[#24A99B] dark:text-[#2DD4BF] dashboard-dark:text-[#2DD4BF]',
+    track: 'stroke-[#E6E0D8] dark:stroke-[#2B314D] dashboard-dark:stroke-[#334155]',
   },
   violet: {
-    stroke: 'stroke-[#7956C8] dark:stroke-[#A58AE8]',
-    text: 'text-[#7956C8] dark:text-[#A58AE8]',
-    track: 'stroke-[#D8C5E8]/60 dark:stroke-[#2B314D]',
+    stroke:
+      'stroke-[#7956C8] dark:stroke-[#A58AE8] dashboard-dark:stroke-[#8B5CF6] dashboard-dark:drop-shadow-[0_0_9px_rgba(139,92,246,0.55)]',
+    text: 'text-[#7956C8] dark:text-[#A58AE8] dashboard-dark:text-[#A78BFA]',
+    track: 'stroke-[#D8C5E8]/60 dark:stroke-[#2B314D] dashboard-dark:stroke-[#334155]',
   },
   amber: {
-    stroke: 'stroke-[#D97706] dark:stroke-[#FBBF24]',
-    text: 'text-[#D97706] dark:text-[#FBBF24]',
-    track: 'stroke-[#E6E0D8] dark:stroke-[#2B314D]',
+    stroke:
+      'stroke-[#D97706] dark:stroke-[#FBBF24] dashboard-dark:stroke-[#FBBF24] dashboard-dark:drop-shadow-[0_0_9px_rgba(251,191,36,0.45)]',
+    text: 'text-[#D97706] dark:text-[#FBBF24] dashboard-dark:text-[#FBBF24]',
+    track: 'stroke-[#E6E0D8] dark:stroke-[#2B314D] dashboard-dark:stroke-[#334155]',
   },
   navy: {
-    stroke: 'stroke-[#20243A] dark:stroke-[#F7F5F0]',
-    text: 'text-[#20243A] dark:text-[#F7F5F0]',
-    track: 'stroke-[#E6E0D8] dark:stroke-[#2B314D]',
+    stroke:
+      'stroke-[#20243A] dark:stroke-[#F7F5F0] dashboard-dark:stroke-[#34D399] dashboard-dark:drop-shadow-[0_0_9px_rgba(52,211,153,0.48)]',
+    text: 'text-[#20243A] dark:text-[#F7F5F0] dashboard-dark:text-[#34D399]',
+    track: 'stroke-[#E6E0D8] dark:stroke-[#2B314D] dashboard-dark:stroke-[#334155]',
   },
 };
 
@@ -57,7 +61,7 @@ export function ProgressRing({
         role="img"
         aria-label={`${label}: ${value === null ? 'No data yet' : `${clamped}%`}`}
       >
-        <svg width={size} height={size} className="-rotate-90">
+        <svg width={size} height={size} className="-rotate-90 overflow-visible">
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -83,18 +87,20 @@ export function ProgressRing({
             className={cn(
               'font-display font-bold tabular-nums leading-none',
               size >= 140 ? 'text-2xl' : 'text-xl',
-              value === null ? 'text-[#5C627D] dark:text-[#A3A9C2]' : palette.text,
+              value === null
+                ? 'text-[#5C627D] dark:text-[#A3A9C2] dashboard-dark:text-[#A8B8CC]'
+                : palette.text,
             )}
           >
             {value === null ? '—' : `${clamped}%`}
           </span>
         </div>
       </div>
-      <p className="mt-2.5 font-display text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+      <p className="mt-2.5 font-display text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0] dashboard-dark:text-[#F8FAFC]">
         {label}
       </p>
       {sublabel && (
-        <p className="mt-0.5 text-xs text-[#5C627D] dark:text-[#A3A9C2] tabular-nums">
+        <p className="mt-0.5 text-xs text-[#5C627D] dark:text-[#A3A9C2] dashboard-dark:text-[#A8B8CC] tabular-nums">
           {sublabel}
         </p>
       )}

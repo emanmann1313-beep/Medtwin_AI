@@ -45,10 +45,10 @@ export function ConsentRow({
 
   const statusTone =
     consent.status === 'accepted'
-      ? 'text-[#24A99B] dark:text-[#2DD4BF]'
+      ? 'text-[#34D399]'
       : consent.status === 'invited'
-        ? 'text-amber-700 dark:text-amber-400'
-        : 'text-red-600 dark:text-red-400';
+        ? 'text-[#FBBF24]'
+        : 'text-[#FB7185]';
 
   const statusLabel = isAwaitingPatientApproval
     ? 'Pending patient approval'
@@ -57,16 +57,16 @@ export function ConsentRow({
       : consent.status;
 
   return (
-    <div className="rounded-[20px] border border-[#E6E0D8] bg-[#FFFFFF] p-5 shadow-[0_4px_18px_rgba(32,36,58,0.04)] space-y-4 dark:border-[#2B314D] dark:bg-[#171B2E] dark:shadow-none">
+    <div className="rounded-[20px] border border-[#334155] bg-[#1A2740] p-5 shadow-[0_10px_28px_rgba(3,7,18,0.38)] space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-base font-semibold text-[#20243A] dark:text-[#F7F5F0]">{primaryTitle}</h4>
-            <span className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+            <h4 className="text-base font-semibold text-[#F8FAFC]">{primaryTitle}</h4>
+            <span className="text-xs text-[#A8B8CC]">
               · {consent.relationship} · {consent.contact_priority} contact
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[#A8B8CC]">
             <span>
               {consent.requested_by === 'caregiver' ? 'Requested' : 'Invited'}{' '}
               {formatShortDate(consent.invited_at)}
@@ -86,7 +86,7 @@ export function ConsentRow({
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {isAwaitingPatientApproval && (
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-300">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#FBBF24]/40 bg-[#FBBF24]/12 px-2.5 py-1 text-xs font-medium text-[#FBBF24]">
               <Clock className="h-3.5 w-3.5" />
               <span>Awaiting patient approval</span>
             </span>
@@ -136,7 +136,7 @@ export function ConsentRow({
 
       {/* Scope summary badges */}
       <div className="space-y-2">
-        <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#5C627D] dark:text-[#A3A9C2]">
+        <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#A8B8CC]">
           Consent scopes ({consent.scopes.length} of {CONSENT_SCOPE_LIST.length} granted)
         </span>
         <ScopeBadges scopes={consent.scopes} showInactive />
@@ -144,14 +144,14 @@ export function ConsentRow({
 
       {/* Inline granular permission switches (when editable on patient Care Circle view) */}
       {editable && consent.status !== 'revoked' && (
-        <div className="space-y-3 border-t border-[#E6E0D8] pt-3 dark:border-[#2B314D]">
+        <div className="space-y-3 border-t border-[#334155] pt-3">
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {CONSENT_SCOPE_LIST.map((meta) => {
               const checked = Boolean(permissions[meta.permissionKey]);
               return (
                 <label
                   key={meta.scope}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] px-3 py-2 text-xs font-medium text-[#20243A] cursor-pointer dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[#334155] bg-[#223451] px-3 py-2 text-xs font-medium text-[#F8FAFC] cursor-pointer"
                 >
                   <span className="truncate" title={meta.description}>
                     {meta.label}
@@ -166,13 +166,13 @@ export function ConsentRow({
           </div>
 
           {onUpdateThreshold && (
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5C627D] dark:text-[#A3A9C2] pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#A8B8CC] pt-1">
               <label className="flex items-center gap-2">
                 <span>Repeated missed-dose alert threshold:</span>
                 <select
                   value={consent.alert_threshold}
                   onChange={(e) => onUpdateThreshold(consent.id, Number(e.target.value))}
-                  className="rounded-lg border border-[#E6E0D8] bg-[#FFFFFF] px-2.5 py-1 text-xs font-medium text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                  className="rounded-lg border border-[#334155] bg-[#0B1220] px-2.5 py-1 text-xs font-medium text-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
                 >
                   {[1, 2, 3, 4, 5].map((n) => (
                     <option key={n} value={n}>

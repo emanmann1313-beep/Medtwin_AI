@@ -113,12 +113,17 @@ export interface CaregiverAlertRecord {
   patient_id: string;
   patient_name: string;
   caregiver_id?: string;
-  alert_type: 'missed_dose' | 'refill_countdown' | 'checkin';
+  caregiver_name?: string;
+  alert_type: 'missed_dose' | 'refill_countdown' | 'checkin' | 'caregiver_invitation' | 'patient_assistance';
   title: string;
   reason: string;
   severity: 'attention' | 'urgent';
   delivery_status: AlertDeliveryState;
   channel: string;
+  channel_kind: 'whatsapp' | 'sms' | 'in_app';
+  recipient_phone?: string;
+  message_body?: string;
+  provider_confirmed?: boolean;
   simulated: boolean;
   created_at: string;
   acknowledged_at?: string;

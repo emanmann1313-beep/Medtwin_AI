@@ -15,9 +15,12 @@ import {
   toggleScopeInPermissions,
 } from '@/src/services/caregiverAdapter';
 import { ConsentList } from '@/src/modules/caregivers/components/ConsentList';
+import { CaregiverContactsSection } from '@/src/modules/caregivers/components/CaregiverContactsSection';
+import { AlertHistoryPanel } from '@/src/modules/caregivers/components/AlertHistoryPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
 import { formatShortDate, formatTimestamp } from '@/src/lib/utils';
 
 const RELATIONSHIPS: RelationshipLabel[] = [
@@ -92,14 +95,17 @@ export function CareCirclePage() {
     [activePatient.id, hasPatients, state.familyMedicalHistory],
   );
 
-  const patientAlerts = useMemo(
+  const rawPatientAlerts = useMemo(
     () =>
       hasPatients && activePatient.id
-        ? state.alerts
-            .filter((a) => a.patientId === activePatient.id)
-            .map((a) => mapAlertToContractRecord(a, state.patients))
+        ? state.alerts.filter((a) => a.patientId === activePatient.id)
         : [],
-    [activePatient.id, hasPatients, state.alerts, state.patients],
+    [activePatient.id, hasPatients, state.alerts],
+  );
+
+  const patientAlerts = useMemo(
+    () => rawPatientAlerts.map((a) => mapAlertToContractRecord(a, state.patients)),
+    [rawPatientAlerts, state.patients],
   );
 
   const registeredDoctors = useMemo(
@@ -176,11 +182,11 @@ export function CareCirclePage() {
     return (
       <Card>
         <CardContent className="py-12 px-6 text-center space-y-3">
-          <Users className="mx-auto h-9 w-9 text-[#7956C8] dark:text-[#A58AE8]" />
-          <h3 className="font-display text-lg font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+          <Users className="mx-auto h-9 w-9 text-[#8B5CF6]" />
+          <h3 className="font-display text-lg font-semibold text-[#F8FAFC]">
             No approved patient Care Circle yet
           </h3>
-          <p className="mx-auto max-w-md text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+          <p className="mx-auto max-w-md text-xs text-[#A8B8CC]">
             Send a connection request from the Caregiver Hub or ask your family member to invite you from their Care Circle.
           </p>
           <div>
@@ -197,22 +203,22 @@ export function CareCirclePage() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="border-[#334155] bg-[#1A2740]">
         <CardContent className="pt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#24A99B] dark:text-[#2DD4BF]">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#2DD4BF]">
               <ShieldCheck className="h-4 w-4" />
               <span>Explicit Consent-Based Access · 4 Scopes</span>
               {!isRealAccountMode && USE_MOCKS && (
-                <span className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-300">
+                <span className="rounded-lg border border-[#FBBF24]/30 bg-[#FBBF24]/15 px-2 py-0.5 text-[11px] font-medium text-[#FBBF24]">
                   Interactive Demo · Simulated Alerts
                 </span>
               )}
             </div>
-            <h2 className="font-display text-2xl font-bold text-[#20243A] dark:text-[#F7F5F0]">
+            <h2 className="font-display text-2xl font-bold text-[#F8FAFC]">
               Care Circle — {activePatient.name}
             </h2>
-            <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="text-sm text-[#A8B8CC]">
               Family relationships never grant automatic access. Toggle the 4 consent scopes or revoke caregiver and doctor access at any time.
             </p>
           </div>
@@ -236,12 +242,49 @@ export function CareCirclePage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column: Caregiver Connections & Doctor Access */}
-        <div className="lg:col-span-7 space-y-6">
+      <Tabs defaultValue="contacts">
+        <TabsList>
+          <TabsTrigger value="contacts">
+            Caregiver Contacts ({connections.length})
+          </TabsTrigger>
+          <TabsTrigger value="consent">
+            Consent Scopes &amp; Access
+          </TabsTrigger>
+          <TabsTrigger value="alert-history">
+            Alert History ({rawPatientAlerts.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="contacts">
+          <CaregiverContactsSection
+            patient={activePatient}
+            canManageContacts={isPatientPerspective}
+          />
+        </TabsContent>
+
+        <TabsContent value="alert-history">
           <Card>
             <CardHeader>
-              <CardTitle className="text-[#20243A] dark:text-[#F7F5F0]">
+              <CardTitle className="text-[#F8FAFC]">
+                Caregiver Alert History
+              </CardTitle>
+              <CardDescription>
+                Chronological audit log of caregiver invitations, missed-dose alerts, refill notifications, and WhatsApp/SMS launches
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AlertHistoryPanel alerts={rawPatientAlerts} patients={state.patients} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="consent">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Left Column: Caregiver Connections & Doctor Access */}
+            <div className="lg:col-span-7 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-[#F8FAFC]">
                 Caregiver connections &amp; consent ({consentRecords.length})
               </CardTitle>
               <CardDescription>
@@ -268,8 +311,8 @@ export function CareCirclePage() {
           {isRealAccountMode && isPatientPerspective && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-[#20243A] dark:text-[#F7F5F0]">
-                  <Stethoscope className="h-4 w-4 text-[#7956C8] dark:text-[#A58AE8]" />
+                <CardTitle className="flex items-center gap-2 text-[#F8FAFC]">
+                  <Stethoscope className="h-4 w-4 text-[#8B5CF6]" />
                   <span>Authorized doctors ({doctorAuthorizations.filter((d) => d.status === 'authorized').length})</span>
                 </CardTitle>
                 <CardDescription>
@@ -300,22 +343,22 @@ export function CareCirclePage() {
                 </form>
 
                 {doctorAuthorizations.length === 0 ? (
-                  <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                  <p className="text-xs text-[#A8B8CC]">
                     No clinicians have been authorized yet.
                   </p>
                 ) : (
-                  <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+                  <div className="divide-y divide-[#334155]">
                     {doctorAuthorizations.map((auth) => (
                       <div
                         key={auth.id}
                         className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-1 last:pb-1 text-xs"
                       >
                         <div>
-                          <p className="font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                          <p className="font-semibold text-[#F8FAFC]">
                             {auth.doctorName}
                             {auth.doctorSpecialty ? ` · ${auth.doctorSpecialty}` : ''}
                           </p>
-                          <p className="text-[#5C627D] dark:text-[#A3A9C2] capitalize">
+                          <p className="text-[#A8B8CC] capitalize">
                             Status: {auth.status} · Updated {formatTimestamp(auth.updatedAt)}
                           </p>
                         </div>
@@ -348,30 +391,30 @@ export function CareCirclePage() {
           {/* Alert History for Patient */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-[#20243A] dark:text-[#F7F5F0]">Care Circle alerts</CardTitle>
+              <CardTitle className="text-[#F8FAFC]">Care Circle alerts</CardTitle>
               <CardDescription>
                 Visibility of alert delivery states and caregiver follow-up acknowledgements
               </CardDescription>
             </CardHeader>
             <CardContent>
               {patientAlerts.length === 0 ? (
-                <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">No Care Circle alerts recorded yet.</p>
+                <p className="text-xs text-[#A8B8CC]">No Care Circle alerts recorded yet.</p>
               ) : (
-                <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+                <div className="divide-y divide-[#334155]">
                   {patientAlerts.map((a) => (
                     <div key={a.id} className="py-3 first:pt-0 last:pb-0 text-xs space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-semibold text-[#20243A] dark:text-[#F7F5F0]">{a.title}</span>
-                        <span className="font-medium capitalize text-[#24A99B] dark:text-[#2DD4BF]">
+                        <span className="font-semibold text-[#F8FAFC]">{a.title}</span>
+                        <span className="font-medium capitalize text-[#2DD4BF]">
                           {a.delivery_status}
                         </span>
                       </div>
-                      <p className="text-[#5C627D] dark:text-[#A3A9C2]">{a.reason}</p>
-                      <p className="text-[11px] text-[#5C627D] dark:text-[#A3A9C2]">
+                      <p className="text-[#A8B8CC]">{a.reason}</p>
+                      <p className="text-[11px] text-[#A8B8CC]">
                         {a.channel} · {formatTimestamp(a.created_at)}
                       </p>
                       {a.follow_up_note && (
-                        <p className="rounded-lg bg-[#24A99B]/10 px-2.5 py-1.5 text-[#197B70] dark:bg-[#2DD4BF]/15 dark:text-[#2DD4BF]">
+                        <p className="rounded-lg border border-[#2DD4BF]/25 bg-[#2DD4BF]/10 px-2.5 py-1.5 text-[#2DD4BF]">
                           Follow-up ({a.acknowledged_by}): {a.follow_up_note}
                         </p>
                       )}
@@ -388,8 +431,8 @@ export function CareCirclePage() {
           {isPatientPerspective && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-[#20243A] dark:text-[#F7F5F0]">
-                  <UserPlus className="h-4 w-4 text-[#24A99B] dark:text-[#2DD4BF]" />
+                <CardTitle className="flex items-center gap-2 text-[#F8FAFC]">
+                  <UserPlus className="h-4 w-4 text-[#2DD4BF]" />
                   <span>Invite to Care Circle</span>
                 </CardTitle>
                 <CardDescription>
@@ -399,7 +442,7 @@ export function CareCirclePage() {
               <CardContent>
                 <form onSubmit={handleInviteSubmit} className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#20243A] dark:text-[#F7F5F0] mb-1">Full name</label>
+                    <label className="block text-xs font-medium text-[#F8FAFC] mb-1">Full name</label>
                     <Input
                       value={inviteName}
                       onChange={(e) => setInviteName(e.target.value)}
@@ -408,7 +451,7 @@ export function CareCirclePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#20243A] dark:text-[#F7F5F0] mb-1">Email</label>
+                    <label className="block text-xs font-medium text-[#F8FAFC] mb-1">Email</label>
                     <Input
                       type="email"
                       value={inviteEmail}
@@ -419,13 +462,13 @@ export function CareCirclePage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-[#20243A] dark:text-[#F7F5F0] mb-1">
+                      <label className="block text-xs font-medium text-[#F8FAFC] mb-1">
                         Relationship
                       </label>
                       <select
                         value={relationship}
                         onChange={(e) => setRelationship(e.target.value as RelationshipLabel)}
-                        className="w-full h-10 rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 text-xs text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                        className="w-full h-10 rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs text-[#F8FAFC]"
                       >
                         {RELATIONSHIPS.map((rel) => (
                           <option key={rel} value={rel}>
@@ -435,13 +478,13 @@ export function CareCirclePage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-[#20243A] dark:text-[#F7F5F0] mb-1">
+                      <label className="block text-xs font-medium text-[#F8FAFC] mb-1">
                         Contact priority
                       </label>
                       <select
                         value={priority}
                         onChange={(e) => setPriority(e.target.value as 'primary' | 'secondary')}
-                        className="w-full h-10 rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 text-xs text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                        className="w-full h-10 rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs text-[#F8FAFC]"
                       >
                         <option value="primary">Primary</option>
                         <option value="secondary">Secondary</option>
@@ -449,8 +492,8 @@ export function CareCirclePage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2 rounded-2xl border border-[#E6E0D8] bg-[#FAF8F5] p-3.5 text-xs text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]">
-                    <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#5C627D] dark:text-[#A3A9C2]">
+                  <div className="space-y-2 rounded-2xl border border-[#334155] bg-[#223451] p-3.5 text-xs text-[#F8FAFC]">
+                    <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#A8B8CC]">
                       Initial Consent Scopes
                     </span>
                     {CONSENT_SCOPE_LIST.map((scopeMeta) => {
@@ -476,11 +519,11 @@ export function CareCirclePage() {
                             type="checkbox"
                             checked={checked}
                             onChange={(e) => toggle(e.target.checked)}
-                            className="accent-[#7956C8] dark:accent-[#A58AE8] mt-0.5"
+                            className="accent-[#8B5CF6] mt-0.5"
                           />
                           <span>
-                            <strong className="font-medium text-[#20243A] dark:text-[#F7F5F0]">{scopeMeta.label}</strong>
-                            <span className="block text-[11px] text-[#5C627D] dark:text-[#A3A9C2]">{scopeMeta.description}</span>
+                            <strong className="font-medium text-[#F8FAFC]">{scopeMeta.label}</strong>
+                            <span className="block text-[11px] text-[#A8B8CC]">{scopeMeta.description}</span>
                           </span>
                         </label>
                       );
@@ -498,20 +541,20 @@ export function CareCirclePage() {
           {/* Optional Family Medical History */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-[#20243A] dark:text-[#F7F5F0]">Family medical history (optional)</CardTitle>
+              <CardTitle className="text-[#F8FAFC]">Family medical history (optional)</CardTitle>
               <CardDescription>
                 Separated from Care Circle permissions. Records reported family context without inferring hereditary diagnoses.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {familyHistory.length > 0 && (
-                <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+                <div className="divide-y divide-[#334155]">
                   {familyHistory.map((item) => (
                     <div key={item.id} className="py-2 first:pt-0 last:pb-0 text-xs">
-                      <p className="font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                      <p className="font-semibold text-[#F8FAFC]">
                         {item.relationship}: {item.reportedCondition}
                       </p>
-                      <p className="text-[#5C627D] dark:text-[#A3A9C2]">
+                      <p className="text-[#A8B8CC]">
                         Source: {item.informationSource} · {formatShortDate(item.recordedAt)}
                       </p>
                     </div>
@@ -519,13 +562,13 @@ export function CareCirclePage() {
                 </div>
               )}
 
-              <form onSubmit={handleAddFamilyHistory} className="space-y-2.5 border-t border-[#E6E0D8] pt-3 dark:border-[#2B314D]">
+              <form onSubmit={handleAddFamilyHistory} className="space-y-2.5 border-t border-[#334155] pt-3">
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     aria-label="Family relationship"
                     value={fmhRel}
                     onChange={(e) => setFmhRel(e.target.value as RelationshipLabel)}
-                    className="h-9 rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-2.5 text-xs text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                    className="h-9 rounded-xl border border-[#334155] bg-[#0B1220] px-2.5 text-xs text-[#F8FAFC]"
                   >
                     {RELATIONSHIPS.map((rel) => (
                       <option key={rel} value={rel}>
@@ -554,6 +597,8 @@ export function CareCirclePage() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -302,10 +302,10 @@ export function DadiNaniModePage() {
   return (
     <div className="space-y-6">
       {/* Elder Voice-First Hero */}
-      <Card className="overflow-hidden border-[#D8C5E8] bg-linear-to-b from-[#FFFFFF] to-[#F5E5EC]/45 dark:border-[#2B314D] dark:from-[#171B2E] dark:to-[#101322]">
+      <Card className="overflow-hidden border-[#8B5CF6]/35 bg-linear-to-b from-[#1A2740] to-[#101B30] shadow-[0_0_24px_rgba(139,92,246,0.16)]">
         <CardContent className="pt-8 pb-8 px-6 text-center space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] p-1 dark:border-[#2B314D] dark:bg-[#101322]">
+            <div className="inline-flex rounded-xl border border-[#334155] bg-[#0B1220] p-1">
               {LANG_OPTIONS.map((lang) => (
                 <button
                   key={lang.id}
@@ -314,8 +314,8 @@ export function DadiNaniModePage() {
                   className={cn(
                     'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer',
                     dadiNaniLanguage === lang.id
-                      ? 'bg-[#7956C8] text-white'
-                      : 'text-[#5C627D] hover:text-[#20243A] dark:text-[#A3A9C2] dark:hover:text-[#F7F5F0]',
+                      ? 'bg-[#8B5CF6] text-white'
+                      : 'text-[#A8B8CC] hover:text-[#F8FAFC]',
                   )}
                 >
                   {lang.label}
@@ -335,10 +335,10 @@ export function DadiNaniModePage() {
           </div>
 
           <div className="mx-auto max-w-2xl space-y-2">
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#20243A] dark:text-[#F7F5F0]">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#F8FAFC]">
               Namaste! How can I help you today? ❤️
             </h2>
-            <p className="text-base sm:text-lg text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="text-base sm:text-lg text-[#A8B8CC]">
               Just tap the microphone and speak. I’m here to help.
             </p>
           </div>
@@ -350,12 +350,12 @@ export function DadiNaniModePage() {
               onClick={handleMicButtonClick}
               aria-label={VOICE_STATE_LABEL[voiceState]}
               className={cn(
-                'relative flex h-28 w-28 items-center justify-center rounded-full text-white shadow-xl transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#7956C8]/40 cursor-pointer',
+                'relative flex h-28 w-28 items-center justify-center rounded-full text-white shadow-xl transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#8B5CF6]/40 cursor-pointer',
                 voiceState === 'listening'
-                  ? 'bg-linear-to-br from-[#7956C8] to-[#24A99B] ring-8 ring-[#7956C8]/25'
+                  ? 'bg-linear-to-br from-[#8B5CF6] to-[#2DD4BF] ring-8 ring-[#8B5CF6]/25'
                   : voiceState === 'error'
-                    ? 'bg-amber-600'
-                    : 'bg-linear-to-br from-[#7956C8] to-[#24A99B]',
+                    ? 'bg-[#FBBF24] text-[#0B1220]'
+                    : 'bg-linear-to-br from-[#8B5CF6] to-[#2DD4BF] shadow-[0_0_28px_rgba(45,212,191,0.28)]',
               )}
             >
               {voiceState === 'understanding' ? (
@@ -378,20 +378,20 @@ export function DadiNaniModePage() {
                   className={cn(
                     'w-1.5 rounded-full transition-all',
                     voiceState === 'listening' || voiceState === 'speaking'
-                      ? 'h-6 bg-[#7956C8] dark:bg-[#2DD4BF] animate-voice-wave'
-                      : 'h-2 bg-[#D8C5E8] dark:bg-[#2B314D]',
+                      ? 'h-6 bg-[#2DD4BF] animate-voice-wave'
+                      : 'h-2 bg-[#334155]',
                   )}
                 />
               ))}
             </div>
 
-            <p className="font-display text-lg font-bold text-[#7956C8] dark:text-[#A58AE8]">
+            <p className="font-display text-lg font-bold text-[#2DD4BF]">
               {VOICE_STATE_LABEL[voiceState]}
             </p>
           </div>
 
           {voiceError && (
-            <div className="mx-auto max-w-xl flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
+            <div className="mx-auto max-w-xl flex items-center justify-center gap-2 rounded-xl border border-[#FBBF24]/35 bg-[#FBBF24]/10 p-3 text-xs text-[#FBBF24]">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{voiceError}</span>
             </div>
@@ -399,15 +399,15 @@ export function DadiNaniModePage() {
 
           {/* Voice Response Box */}
           {(recognizedText || assistantReply) && (
-            <div className="mx-auto max-w-2xl rounded-2xl border border-[#D8C5E8] bg-[#FFFFFF] p-5 text-left space-y-3 shadow-sm dark:border-[#2B314D] dark:bg-[#171B2E]">
+            <div className="mx-auto max-w-2xl rounded-2xl border border-[#334155] bg-[#223451] p-5 text-left space-y-3 shadow-sm">
               {recognizedText && (
-                <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+                <p className="text-sm text-[#A8B8CC]">
                   <strong>You asked:</strong> “{recognizedText}”
                 </p>
               )}
               {assistantReply && (
                 <>
-                  <p className="text-base sm:text-lg leading-relaxed font-medium text-[#20243A] dark:text-[#F7F5F0] whitespace-pre-wrap">
+                  <p className="text-base sm:text-lg leading-relaxed font-medium text-[#F8FAFC] whitespace-pre-wrap">
                     {assistantReply}
                   </p>
                   <div className="flex flex-wrap gap-2 pt-2">
@@ -469,7 +469,7 @@ export function DadiNaniModePage() {
 
           {/* 6 Quick Question Buttons */}
           <div className="mx-auto max-w-3xl pt-2">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#A8B8CC]">
               Quick Voice Questions — Tap Any Button
             </p>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -484,7 +484,7 @@ export function DadiNaniModePage() {
                     }
                     void askElderQuestion(q);
                   }}
-                  className="rounded-2xl border border-[#E6E0D8] bg-[#FFFFFF] px-4 py-3 text-left text-sm font-semibold text-[#20243A] hover:border-[#7956C8] hover:text-[#7956C8] transition-colors cursor-pointer dark:border-[#2B314D] dark:bg-[#171B2E] dark:text-[#F7F5F0] dark:hover:border-[#A58AE8]"
+                  className="rounded-2xl border border-[#334155] bg-[#223451] px-4 py-3 text-left text-sm font-semibold text-[#F8FAFC] hover:border-[#8B5CF6] hover:text-[#2DD4BF] transition-colors cursor-pointer"
                 >
                   {q}
                 </button>
@@ -506,7 +506,7 @@ export function DadiNaniModePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {activeMeds.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-[#E6E0D8] p-6 text-center text-sm text-[#5C627D] dark:border-[#2B314D] dark:text-[#A3A9C2]">
+              <div className="rounded-xl border border-dashed border-[#334155] p-6 text-center text-sm text-[#A8B8CC]">
                 No saved prescriptions yet. Scan a prescription to see your medicine cards here.
               </div>
             ) : (
@@ -519,14 +519,14 @@ export function DadiNaniModePage() {
                 return (
                   <div
                     key={med.id}
-                    className="flex flex-col gap-3 rounded-2xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#2B314D] dark:bg-[#101322]"
+                    className="flex flex-col gap-3 rounded-2xl border border-[#334155] bg-[#223451] p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="space-y-1">
-                      <p className="text-lg font-bold text-[#20243A] dark:text-[#F7F5F0]">
+                      <p className="text-lg font-bold text-[#F8FAFC]">
                         {med.name} · {med.strength}
                       </p>
-                      <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">{med.instructions}</p>
-                      <p className="text-xs font-mono text-[#24A99B] dark:text-[#2DD4BF] tabular-nums">
+                      <p className="text-sm text-[#A8B8CC]">{med.instructions}</p>
+                      <p className="text-xs font-mono text-[#2DD4BF] tabular-nums">
                         {med.scheduledTimes.length > 0
                           ? med.scheduledTimes.map(formatTime12h).join(' · ')
                           : 'As needed (PRN)'}
@@ -562,7 +562,7 @@ export function DadiNaniModePage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleJournalSubmit} className="space-y-4">
-              <div className="inline-flex rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-1 dark:border-[#2B314D] dark:bg-[#101322]">
+              <div className="inline-flex rounded-xl border border-[#334155] bg-[#101B30] p-1">
                 {(
                   [
                     { id: 'problem', label: 'Health Problem' },
@@ -577,8 +577,8 @@ export function DadiNaniModePage() {
                     className={cn(
                       'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                       entryType === t.id
-                        ? 'bg-[#FFFFFF] text-[#20243A] shadow-xs dark:bg-[#171B2E] dark:text-[#F7F5F0]'
-                        : 'text-[#5C627D] dark:text-[#A3A9C2]',
+                        ? 'bg-[#8B5CF6] text-white'
+                        : 'text-[#A8B8CC] hover:text-[#F8FAFC]',
                     )}
                   >
                     {t.label}
@@ -597,11 +597,11 @@ export function DadiNaniModePage() {
                       className={cn(
                         'inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-colors cursor-pointer',
                         active
-                          ? 'border-[#7956C8] bg-[#D8C5E8]/45 text-[#7956C8] dark:border-[#A58AE8] dark:bg-[#7956C8]/25 dark:text-[#F7F5F0]'
-                          : 'border-[#E6E0D8] bg-[#FFFFFF] text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]',
+                          ? 'border-[#8B5CF6] bg-[#8B5CF6]/20 text-[#F8FAFC]'
+                          : 'border-[#334155] bg-[#223451] text-[#A8B8CC] hover:text-[#F8FAFC]',
                       )}
                     >
-                      {active && <Check className="h-3.5 w-3.5" />}
+                      {active && <Check className="h-3.5 w-3.5 text-[#2DD4BF]" />}
                       <span>{sym}</span>
                     </button>
                   );
@@ -620,13 +620,13 @@ export function DadiNaniModePage() {
                 placeholder="Optional home comfort routine (e.g., warm ginger tea, rest)"
               />
 
-              <div className="space-y-2 rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-3 text-xs dark:border-[#2B314D] dark:bg-[#101322]">
+              <div className="space-y-2 rounded-xl border border-[#334155] bg-[#223451] p-3 text-xs text-[#F8FAFC]">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={shareWithCareCircle}
                     onChange={(e) => setShareWithCareCircle(e.target.checked)}
-                    className="h-4 w-4 accent-[#7956C8]"
+                    className="h-4 w-4 accent-[#8B5CF6]"
                   />
                   <span>Share with consented Care Circle family members</span>
                 </label>
@@ -635,7 +635,7 @@ export function DadiNaniModePage() {
                     type="checkbox"
                     checked={shareWithDoctor}
                     onChange={(e) => setShareWithDoctor(e.target.checked)}
-                    className="h-4 w-4 accent-[#7956C8]"
+                    className="h-4 w-4 accent-[#8B5CF6]"
                   />
                   <span>Include in doctor’s summary timeline</span>
                 </label>
@@ -661,22 +661,22 @@ export function DadiNaniModePage() {
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
-            <p className="py-4 text-center text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="py-4 text-center text-sm text-[#A8B8CC]">
               No shared updates yet.
             </p>
           ) : (
-            <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+            <div className="divide-y divide-[#334155]">
               {entries.map((entry) => (
                 <div key={entry.id} className="py-3.5 first:pt-0 last:pb-0 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-[#5C627D] dark:text-[#A3A9C2]">
-                    <span className="font-semibold text-[#20243A] dark:text-[#F7F5F0] capitalize">
+                  <div className="flex items-center justify-between text-xs text-[#A8B8CC]">
+                    <span className="font-semibold text-[#F8FAFC] capitalize">
                       {entry.entryType.replace('_', ' ')} · {entry.authorName}
                     </span>
                     <span className="font-mono tabular-nums">{formatTimestamp(entry.createdAt)}</span>
                   </div>
-                  <p className="text-sm">{entry.feelingSummary}</p>
+                  <p className="text-sm text-[#F8FAFC]">{entry.feelingSummary}</p>
                   {entry.homeComfortNote && (
-                    <p className="text-xs text-[#24A99B] dark:text-[#2DD4BF]">
+                    <p className="text-xs text-[#2DD4BF]">
                       Home comfort routine: {entry.homeComfortNote}
                     </p>
                   )}

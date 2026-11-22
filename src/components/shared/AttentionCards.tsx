@@ -10,13 +10,13 @@ export function AttentionCards({ items }: { items: AttentionItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="flex items-start gap-3 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-5 dark:border-[#334155] dark:bg-[#172033]">
-        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#0D9488] dark:text-[#14B8A6]" />
+      <div className="flex items-start gap-3 rounded-2xl border border-[#334155] bg-[#1A2740] p-5 shadow-[0_12px_30px_rgba(2,6,23,0.45)]">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#34D399]" />
         <div>
-          <p className="text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
+          <p className="text-sm font-semibold text-[#F8FAFC]">
             No active attention items
           </p>
-          <p className="mt-0.5 text-xs text-[#64748B] dark:text-[#94A3B8]">
+          <p className="mt-0.5 text-xs text-[#A8B8CC]">
             Schedules, refill quantities, and caregiver alerts are up to date.
           </p>
         </div>
@@ -32,49 +32,47 @@ export function AttentionCards({ items }: { items: AttentionItem[] }) {
           <div
             key={item.id}
             className={cn(
-              'rounded-2xl border bg-[#FFFFFF] p-4 transition-colors dark:bg-[#172033]',
+              'rounded-2xl border bg-[#1A2740] p-4 transition-colors shadow-[0_10px_28px_rgba(2,6,23,0.4)]',
               isUrgent
-                ? 'border-red-200 dark:border-red-500/35'
-                : 'border-amber-200 dark:border-amber-500/35',
+                ? 'border-[#FB7185]/45 shadow-[0_0_24px_rgba(251,113,133,0.12)]'
+                : 'border-[#FBBF24]/40 shadow-[0_0_24px_rgba(251,191,36,0.08)]',
             )}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-2.5 min-w-0">
                 {isUrgent ? (
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#FB7185]" />
                 ) : (
-                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#FBBF24]" />
                 )}
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span
                       className={cn(
                         'font-semibold',
-                        isUrgent
-                          ? 'text-red-700 dark:text-red-400'
-                          : 'text-amber-700 dark:text-amber-400',
+                        isUrgent ? 'text-[#FB7185]' : 'text-[#FBBF24]',
                       )}
                     >
                       {item.label}
                     </span>
-                    <span aria-hidden="true" className="text-[#E2E8F0] dark:text-[#334155]">
+                    <span aria-hidden="true" className="text-[#334155]">
                       ·
                     </span>
-                    <span className="text-[#64748B] dark:text-[#94A3B8]">{item.timePeriod}</span>
+                    <span className="text-[#A8B8CC]">{item.timePeriod}</span>
                   </div>
-                  <h4 className="mt-1 text-sm font-semibold text-[#172554] dark:text-[#F8FAFC]">
+                  <h4 className="mt-1 text-sm font-semibold text-[#F8FAFC]">
                     {item.title}
                   </h4>
                 </div>
               </div>
             </div>
 
-            <p className="mt-2 text-xs text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
+            <p className="mt-2 text-xs text-[#A8B8CC] leading-relaxed">
               {item.trigger}
             </p>
 
             {item.supportingRecords.length > 0 && (
-              <ul className="mt-2.5 space-y-1 border-t border-[#E2E8F0] pt-2.5 text-xs text-[#64748B] dark:border-[#334155] dark:text-[#94A3B8]">
+              <ul className="mt-2.5 space-y-1 border-t border-[#334155] pt-2.5 text-xs text-[#A8B8CC]">
                 {item.supportingRecords.map((rec, idx) => (
                   <li key={idx} className="truncate">
                     {rec}

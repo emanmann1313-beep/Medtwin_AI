@@ -71,10 +71,10 @@ export function ConsentList({
               type="button"
               onClick={() => setStatusFilter(tab)}
               className={cn(
-                'rounded-xl px-3 py-1.5 text-xs font-medium capitalize transition-colors cursor-pointer',
+                'rounded-xl px-3 py-1.5 text-xs font-medium capitalize transition-all cursor-pointer',
                 statusFilter === tab
-                  ? 'bg-[#7956C8] text-white dark:bg-[#A58AE8] dark:text-[#101322]'
-                  : 'border border-[#E6E0D8] bg-[#FFFFFF] text-[#5C627D] hover:bg-[#FAF8F5] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#A3A9C2] dark:hover:bg-[#1E243D]',
+                  ? 'bg-[#8B5CF6] text-[#F8FAFC] shadow-[0_0_16px_rgba(139,92,246,0.28)]'
+                  : 'border border-[#334155] bg-[#1A2740] text-[#A8B8CC] hover:bg-[#223451] hover:text-[#F8FAFC]',
               )}
             >
               {tab} ({counts[tab]})
@@ -83,7 +83,7 @@ export function ConsentList({
         </div>
 
         <div className="relative w-full sm:w-56">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#5C627D] dark:text-[#A3A9C2]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#A8B8CC]" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -95,9 +95,9 @@ export function ConsentList({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-[#E6E0D8] bg-[#FAF8F5] py-10 px-4 text-center dark:border-[#2B314D] dark:bg-[#101322]">
-          <ShieldCheck className="h-8 w-8 text-[#D8C5E8] dark:text-[#4B5278] mb-2" />
-          <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">{emptyMessage}</p>
+        <div className="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-[#334155] bg-[#1A2740] py-10 px-4 text-center">
+          <ShieldCheck className="h-8 w-8 text-[#8B5CF6] mb-2" />
+          <p className="text-sm text-[#A8B8CC]">{emptyMessage}</p>
         </div>
       ) : (
         <div className="space-y-3">

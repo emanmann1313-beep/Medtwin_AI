@@ -39,7 +39,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
+    if (theme === 'dark' || root.classList.contains('dashboard-dark')) {
       root.classList.add('dark');
       root.style.colorScheme = 'dark';
     } else {

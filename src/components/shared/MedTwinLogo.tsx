@@ -26,25 +26,25 @@ export function MedTwinLogo({
           cx="11"
           cy="14"
           r="7.25"
-          className="stroke-[#7956C8] dark:stroke-[#A58AE8]"
+          className="stroke-[#7956C8] dark:stroke-[#A58AE8] dashboard-dark:stroke-[#8B5CF6]"
           strokeWidth="1.85"
         />
         <circle
           cx="17"
           cy="14"
           r="7.25"
-          className="stroke-[#24A99B] dark:stroke-[#2DD4BF]"
+          className="stroke-[#24A99B] dark:stroke-[#2DD4BF] dashboard-dark:stroke-[#2DD4BF]"
           strokeWidth="1.85"
         />
         <circle
           cx="14"
           cy="14"
           r="1.9"
-          className="fill-[#20243A] dark:fill-[#F7F5F0]"
+          className="fill-[#20243A] dark:fill-[#F7F5F0] dashboard-dark:fill-[#F8FAFC]"
         />
       </svg>
       {showWordmark && (
-        <span className="font-display text-[17px] font-semibold tracking-tight text-[#20243A] dark:text-[#F7F5F0]">
+        <span className="font-display text-[17px] font-semibold tracking-tight text-[#20243A] dark:text-[#F7F5F0] dashboard-dark:text-[#F8FAFC]">
           MedTwin AI
         </span>
       )}

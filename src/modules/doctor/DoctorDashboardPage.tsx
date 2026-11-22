@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowUpDown,
   Bot,
-  CheckCircle2,
   ClipboardCheck,
   Search,
   ShieldAlert,
@@ -21,7 +20,6 @@ import {
 } from 'recharts';
 import { useAuth } from '@/src/context/AuthContext';
 import { useMedTwin } from '@/src/context/MedTwinContext';
-import { useTheme } from '@/src/context/ThemeContext';
 import {
   buildExplainableAttentionItems,
   computeAdherenceMetrics,
@@ -34,6 +32,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src
 import { Button } from '@/src/components/ui/button';
 import { Input, Textarea } from '@/src/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
+import { CaregiverContactsSection } from '@/src/modules/caregivers/components/CaregiverContactsSection';
 import { cn, formatShortDate, formatTimestamp } from '@/src/lib/utils';
 
 type SortKey = 'name' | 'age' | 'adherence' | 'lastReview';
@@ -47,8 +46,6 @@ export function DoctorDashboardPage() {
     setActivePatientId,
     addClinicianNote,
   } = useMedTwin();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
   const activeDoctor = useMemo(() => {
     const found = state.doctors.find((d) => d.id === state.activeDoctorId) ?? state.doctors[0];
@@ -299,11 +296,6 @@ export function DoctorDashboardPage() {
   const patientNotes = selectedPatient
     ? state.clinicianNotes.filter((n) => n.patientId === selectedPatient.id)
     : [];
-  const patientCaregivers = selectedPatient
-    ? state.connections.filter(
-        (c) => c.patientId === selectedPatient.id && c.status === 'accepted',
-      )
-    : [];
   const patientRx = selectedPatient
     ? state.prescriptions.filter((r) => r.patientId === selectedPatient.id)
     : [];
@@ -323,20 +315,20 @@ export function DoctorDashboardPage() {
     <div className="space-y-6">
       {/* Credential Verification Banner (Real accounts with pending verification) */}
       {isRealAccountMode && !isDoctorVerified && (
-        <Card className="border-amber-200 bg-amber-50/70 dark:border-amber-700/50 dark:bg-amber-950/30">
+        <Card className="border-[#FBBF24]/45 bg-[#FBBF24]/10">
           <CardContent className="pt-5 pb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
-              <ShieldAlert className="h-5 w-5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+              <ShieldAlert className="h-5 w-5 text-[#FBBF24] shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-200">
+                <h3 className="text-sm font-semibold text-[#F8FAFC]">
                   Credential verification pending ({user?.verificationStatus.replace('_', ' ')})
                 </h3>
-                <p className="text-xs text-amber-900/90 dark:text-amber-200/85 max-w-2xl">
+                <p className="text-xs text-[#A8B8CC] max-w-2xl">
                   Entering a medical registration number does not automatically verify clinician privileges. Until credential verification completes, signing clinical notes is restricted. You can still review patients who explicitly authorize your account.
                 </p>
               </div>
             </div>
-            <span className="shrink-0 font-mono text-xs font-semibold text-amber-800 dark:text-amber-300">
+            <span className="shrink-0 font-mono text-xs font-semibold text-[#FBBF24]">
               License: {activeDoctor.licenseNumber}
             </span>
           </CardContent>
@@ -345,51 +337,51 @@ export function DoctorDashboardPage() {
 
       {/* Top KPI Row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
+        <Card className="border-[#8B5CF6]/30 shadow-[0_0_22px_rgba(139,92,246,0.12)]">
           <CardHeader className="pb-2">
             <CardDescription>Authorized patients</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-[#20243A] dark:text-[#F7F5F0]">
+            <CardTitle className="text-3xl font-bold tabular-nums text-[#F8FAFC]">
               {enrichedPatients.length}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">{activeDoctor.specialty}</p>
+            <p className="text-xs text-[#A8B8CC]">{activeDoctor.specialty}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Open Care Circle alerts</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
+            <CardTitle className="text-3xl font-bold tabular-nums text-[#FBBF24]">
               {unreviewedAlertsCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">Caregiver escalation queue</p>
+            <p className="text-xs text-[#A8B8CC]">Caregiver escalation queue</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Prescription updates</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-[#7956C8] dark:text-[#A58AE8]">
+            <CardTitle className="text-3xl font-bold tabular-nums text-[#8B5CF6]">
               {recentRxCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">Confirmed digital schedules</p>
+            <p className="text-xs text-[#A8B8CC]">Confirmed digital schedules</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-[#2DD4BF]/30 shadow-[0_0_22px_rgba(45,212,191,0.10)]">
           <CardHeader className="pb-2">
             <CardDescription>Upcoming follow-ups</CardDescription>
-            <CardTitle className="text-3xl font-bold tabular-nums text-[#24A99B] dark:text-[#2DD4BF]">
+            <CardTitle className="text-3xl font-bold tabular-nums text-[#2DD4BF]">
               {upcomingFollowUpsCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">Scheduled clinic reviews</p>
+            <p className="text-xs text-[#A8B8CC]">Scheduled clinic reviews</p>
           </CardContent>
         </Card>
       </div>
@@ -398,23 +390,23 @@ export function DoctorDashboardPage() {
       {!hasPatients || !selectedPatient ? (
         <Card>
           <CardContent className="py-12 px-6 text-center space-y-4">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#D8C5E8]/40 text-[#7956C8] dark:bg-[#7956C8]/20 dark:text-[#A58AE8]">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#8B5CF6]/20 text-[#8B5CF6]">
               <UserCheck className="h-6 w-6" />
             </div>
             <div className="space-y-1.5 max-w-lg mx-auto">
-              <h3 className="font-display text-lg font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+              <h3 className="font-display text-lg font-semibold text-[#F8FAFC]">
                 No authorized patients yet
               </h3>
-              <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+              <p className="text-sm text-[#A8B8CC]">
                 In MedTwin AI, doctors only view patients who have explicitly granted clinician authorization. Ask your patients to authorize{' '}
-                <span className="font-mono font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                <span className="font-mono font-semibold text-[#F8FAFC]">
                   {activeDoctor.email || 'your registered email'}
                 </span>{' '}
                 from their Care Circle or Profile &amp; Access screen.
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] px-4 py-2 text-xs text-[#5C627D] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#A3A9C2]">
-              <ShieldCheck className="h-4 w-4 text-[#24A99B] dark:text-[#2DD4BF]" />
+            <div className="inline-flex items-center gap-2 rounded-xl border border-[#334155] bg-[#223451] px-4 py-2 text-xs text-[#A8B8CC]">
+              <ShieldCheck className="h-4 w-4 text-[#2DD4BF]" />
               <span>Strict patient-consent boundary enforced server-side</span>
             </div>
           </CardContent>
@@ -433,15 +425,15 @@ export function DoctorDashboardPage() {
                 </div>
 
                 {!isRealAccountMode && (
-                  <div className="inline-flex rounded-xl bg-[#FAF8F5] border border-[#E6E0D8] p-1 dark:bg-[#101322] dark:border-[#2B314D]">
+                  <div className="inline-flex rounded-xl bg-[#0B1220] border border-[#334155] p-1">
                     <button
                       type="button"
                       onClick={() => setPanelScope('assigned')}
                       className={cn(
-                        'rounded-lg px-3 py-1.5 text-xs font-medium cursor-pointer',
+                        'rounded-lg px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors',
                         panelScope === 'assigned'
-                          ? 'bg-[#FFFFFF] text-[#20243A] shadow-xs dark:bg-[#171B2E] dark:text-[#F7F5F0]'
-                          : 'text-[#5C627D] dark:text-[#A3A9C2]',
+                          ? 'bg-[#223451] text-[#F8FAFC] shadow-xs'
+                          : 'text-[#A8B8CC] hover:text-[#F8FAFC]',
                       )}
                     >
                       My patients
@@ -450,10 +442,10 @@ export function DoctorDashboardPage() {
                       type="button"
                       onClick={() => setPanelScope('all')}
                       className={cn(
-                        'rounded-lg px-3 py-1.5 text-xs font-medium cursor-pointer',
+                        'rounded-lg px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors',
                         panelScope === 'all'
-                          ? 'bg-[#FFFFFF] text-[#20243A] shadow-xs dark:bg-[#171B2E] dark:text-[#F7F5F0]'
-                          : 'text-[#5C627D] dark:text-[#A3A9C2]',
+                          ? 'bg-[#223451] text-[#F8FAFC] shadow-xs'
+                          : 'text-[#A8B8CC] hover:text-[#F8FAFC]',
                       )}
                     >
                       All authorized ({state.patients.length})
@@ -464,7 +456,7 @@ export function DoctorDashboardPage() {
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5C627D] dark:text-[#A3A9C2]" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A8B8CC]" />
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -479,7 +471,7 @@ export function DoctorDashboardPage() {
                   onChange={(e) =>
                     setAttentionFilter(e.target.value as 'all' | 'needs_attention' | 'nominal')
                   }
-                  className="h-10 rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 text-xs text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                  className="h-10 rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs text-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
                 >
                   <option value="all">Attention: All</option>
                   <option value="needs_attention">Needs attention</option>
@@ -490,7 +482,7 @@ export function DoctorDashboardPage() {
                   aria-label="Filter by refill status"
                   value={refillFilter}
                   onChange={(e) => setRefillFilter(e.target.value as 'all' | 'refill_needed')}
-                  className="h-10 rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 text-xs text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                  className="h-10 rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs text-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
                 >
                   <option value="all">Refill: All</option>
                   <option value="refill_needed">Refill needed</option>
@@ -500,7 +492,7 @@ export function DoctorDashboardPage() {
                   aria-label="Filter by last review"
                   value={reviewFilter}
                   onChange={(e) => setReviewFilter(e.target.value as 'all' | 'overdue_14d')}
-                  className="h-10 rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 text-xs text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                  className="h-10 rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs text-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
                 >
                   <option value="all">Last review: Any</option>
                   <option value="overdue_14d">14+ days since review</option>
@@ -512,12 +504,12 @@ export function DoctorDashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-[#E6E0D8] text-[#5C627D] dark:border-[#2B314D] dark:text-[#A3A9C2]">
+                    <tr className="border-b border-[#334155] text-[#A8B8CC]">
                       <th className="py-2.5 pr-3 font-medium">
                         <button
                           type="button"
                           onClick={() => toggleSort('name')}
-                          className="inline-flex items-center gap-1 hover:text-[#20243A] dark:hover:text-[#F7F5F0] cursor-pointer"
+                          className="inline-flex items-center gap-1 hover:text-[#F8FAFC] cursor-pointer"
                         >
                           <span>Patient</span>
                           <ArrowUpDown className="h-3 w-3" />
@@ -528,7 +520,7 @@ export function DoctorDashboardPage() {
                         <button
                           type="button"
                           onClick={() => toggleSort('age')}
-                          className="inline-flex items-center gap-1 hover:text-[#20243A] dark:hover:text-[#F7F5F0] cursor-pointer"
+                          className="inline-flex items-center gap-1 hover:text-[#F8FAFC] cursor-pointer"
                         >
                           <span>Age</span>
                           <ArrowUpDown className="h-3 w-3" />
@@ -538,7 +530,7 @@ export function DoctorDashboardPage() {
                         <button
                           type="button"
                           onClick={() => toggleSort('adherence')}
-                          className="inline-flex items-center gap-1 hover:text-[#20243A] dark:hover:text-[#F7F5F0] cursor-pointer"
+                          className="inline-flex items-center gap-1 hover:text-[#F8FAFC] cursor-pointer"
                         >
                           <span>7d Adherence</span>
                           <ArrowUpDown className="h-3 w-3" />
@@ -550,7 +542,7 @@ export function DoctorDashboardPage() {
                         <button
                           type="button"
                           onClick={() => toggleSort('lastReview')}
-                          className="inline-flex items-center gap-1 hover:text-[#20243A] dark:hover:text-[#F7F5F0] cursor-pointer"
+                          className="inline-flex items-center gap-1 hover:text-[#F8FAFC] cursor-pointer"
                         >
                           <span>Last review</span>
                           <ArrowUpDown className="h-3 w-3" />
@@ -559,7 +551,7 @@ export function DoctorDashboardPage() {
                       <th className="py-2.5 pl-3 font-medium">Next follow-up</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+                  <tbody className="divide-y divide-[#334155]">
                     {filteredRows.map((row) => {
                       const isSelected = row.patient.id === selectedPatient.id;
                       return (
@@ -571,25 +563,25 @@ export function DoctorDashboardPage() {
                             setVisitSummary(null);
                           }}
                           className={cn(
-                            'cursor-pointer transition-colors hover:bg-[#FAF8F5] dark:hover:bg-[#1E243D]',
-                            isSelected && 'bg-[#D8C5E8]/35 dark:bg-[#7956C8]/20',
+                            'cursor-pointer transition-colors hover:bg-[#223451]',
+                            isSelected && 'bg-[#8B5CF6]/18',
                           )}
                         >
-                          <td className="py-3 pr-3 font-semibold text-[#20243A] dark:text-[#F7F5F0] whitespace-nowrap">
+                          <td className="py-3 pr-3 font-semibold text-[#F8FAFC] whitespace-nowrap">
                             {row.patient.name}
                           </td>
-                          <td className="py-3 px-3 font-mono text-[#5C627D] dark:text-[#A3A9C2] tabular-nums whitespace-nowrap">
+                          <td className="py-3 px-3 font-mono text-[#A8B8CC] tabular-nums whitespace-nowrap">
                             {row.patient.mrn}
                           </td>
-                          <td className="py-3 px-3 text-right font-mono text-[#20243A] dark:text-[#F7F5F0] tabular-nums">
+                          <td className="py-3 px-3 text-right font-mono text-[#F8FAFC] tabular-nums">
                             {row.patient.age || '—'}
                           </td>
                           <td
                             className={cn(
                               'py-3 px-3 text-right font-mono font-semibold tabular-nums',
                               row.adherencePct < 80
-                                ? 'text-amber-700 dark:text-amber-400'
-                                : 'text-[#24A99B] dark:text-[#2DD4BF]',
+                                ? 'text-[#FBBF24]'
+                                : 'text-[#34D399]',
                             )}
                           >
                             {row.adherencePct}%
@@ -599,20 +591,20 @@ export function DoctorDashboardPage() {
                               className={cn(
                                 'font-medium',
                                 row.needsRefill
-                                  ? 'text-amber-700 dark:text-amber-400'
-                                  : 'text-[#5C627D] dark:text-[#A3A9C2]',
+                                  ? 'text-[#FBBF24]'
+                                  : 'text-[#A8B8CC]',
                               )}
                             >
                               {row.needsRefill ? `Refill needed (${row.refillCount})` : 'Nominal'}
                             </span>
                           </td>
-                          <td className="py-3 px-3 text-[#5C627D] dark:text-[#A3A9C2] max-w-[240px] truncate">
+                          <td className="py-3 px-3 text-[#A8B8CC] max-w-[240px] truncate">
                             {row.primaryReason}
                           </td>
-                          <td className="py-3 px-3 font-mono text-[#5C627D] dark:text-[#A3A9C2] tabular-nums whitespace-nowrap">
+                          <td className="py-3 px-3 font-mono text-[#A8B8CC] tabular-nums whitespace-nowrap">
                             {formatShortDate(row.patient.lastReviewDate)}
                           </td>
-                          <td className="py-3 pl-3 font-mono text-[#5C627D] dark:text-[#A3A9C2] tabular-nums whitespace-nowrap">
+                          <td className="py-3 pl-3 font-mono text-[#A8B8CC] tabular-nums whitespace-nowrap">
                             {row.patient.nextFollowUpDate
                               ? formatShortDate(row.patient.nextFollowUpDate)
                               : 'Unscheduled'}
@@ -627,11 +619,11 @@ export function DoctorDashboardPage() {
           </Card>
 
           {/* Selected Patient Clinical Detail */}
-          <Card>
-            <CardHeader className="flex flex-col gap-4 border-b border-[#E6E0D8] pb-5 lg:flex-row lg:items-center lg:justify-between dark:border-[#2B314D]">
+          <Card className="border-[#8B5CF6]/30 shadow-[0_0_26px_rgba(139,92,246,0.12)]">
+            <CardHeader className="flex flex-col gap-4 border-b border-[#334155] pb-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
-                  <span className="font-mono text-[#20243A] dark:text-[#F7F5F0]">{selectedPatient.mrn}</span>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-[#A8B8CC]">
+                  <span className="font-mono text-[#2DD4BF]">{selectedPatient.mrn}</span>
                   <span aria-hidden="true">·</span>
                   <span>
                     {selectedPatient.gender}, {selectedPatient.age > 0 ? `${selectedPatient.age} yrs` : 'Age unrecorded'}
@@ -676,19 +668,19 @@ export function DoctorDashboardPage() {
 
             <CardContent className="pt-5 space-y-6">
               {summaryError && (
-                <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-300">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                <div className="flex items-start gap-2.5 rounded-xl border border-[#FB7185]/45 bg-[#FB7185]/12 p-3 text-xs text-[#FB7185]">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#FB7185]" />
                   <div>
                     <p className="font-semibold">AI Visit Summary unavailable</p>
-                    <p>{summaryError}</p>
+                    <p className="text-[#F8FAFC]/90">{summaryError}</p>
                   </div>
                 </div>
               )}
 
               {visitSummary && (
-                <div className="rounded-2xl border border-[#7956C8]/30 bg-[#D8C5E8]/20 p-5 space-y-3 dark:border-[#A58AE8]/30 dark:bg-[#7956C8]/15">
+                <div className="rounded-2xl border border-[#8B5CF6]/45 bg-[#223451] p-5 space-y-3 shadow-[0_0_24px_rgba(139,92,246,0.16)]">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-[#7956C8] dark:text-[#A58AE8]">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[#8B5CF6]">
                       <ClipboardCheck className="h-4 w-4" />
                       <span>AI-Generated Visit Summary — Requires Clinician Review</span>
                     </div>
@@ -702,21 +694,21 @@ export function DoctorDashboardPage() {
                       Approve &amp; save to clinician notes
                     </Button>
                   </div>
-                  <p className="text-sm text-[#20243A] dark:text-[#F7F5F0] leading-relaxed">
+                  <p className="text-sm text-[#F8FAFC] leading-relaxed">
                     {visitSummary.summary.summaryParagraph}
                   </p>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2 text-xs">
                     <div>
-                      <p className="font-semibold text-[#20243A] dark:text-[#F7F5F0] mb-1">Adherence observations</p>
-                      <ul className="list-disc pl-4 space-y-0.5 text-[#5C627D] dark:text-[#A3A9C2]">
+                      <p className="font-semibold text-[#F8FAFC] mb-1">Adherence observations</p>
+                      <ul className="list-disc pl-4 space-y-0.5 text-[#A8B8CC]">
                         {visitSummary.summary.adherenceObservations.map((o, i) => (
                           <li key={i}>{o}</li>
                         ))}
                       </ul>
                     </div>
                     <div>
-                      <p className="font-semibold text-[#20243A] dark:text-[#F7F5F0] mb-1">Cited record sources</p>
-                      <ul className="list-disc pl-4 space-y-0.5 text-[#5C627D] dark:text-[#A3A9C2]">
+                      <p className="font-semibold text-[#F8FAFC] mb-1">Cited record sources</p>
+                      <ul className="list-disc pl-4 space-y-0.5 text-[#A8B8CC]">
                         {visitSummary.summary.citedSources.map((s) => (
                           <li key={s.id}>
                             {s.label} <span className="font-mono">({s.id})</span>
@@ -738,17 +730,17 @@ export function DoctorDashboardPage() {
 
                 <TabsContent value="meds" className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="rounded-xl border border-[#E6E0D8] p-4 text-xs space-y-1 dark:border-[#2B314D]">
-                      <p className="font-semibold text-[#20243A] dark:text-[#F7F5F0]">Recorded conditions</p>
-                      <p className="text-[#5C627D] dark:text-[#A3A9C2]">
+                    <div className="rounded-xl border border-[#334155] bg-[#223451] p-4 text-xs space-y-1">
+                      <p className="font-semibold text-[#F8FAFC]">Recorded conditions</p>
+                      <p className="text-[#A8B8CC]">
                         {selectedPatient.conditions.length > 0
                           ? selectedPatient.conditions.join(', ')
                           : 'None recorded'}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-[#E6E0D8] p-4 text-xs space-y-1 dark:border-[#2B314D]">
-                      <p className="font-semibold text-[#20243A] dark:text-[#F7F5F0]">Recorded allergies</p>
-                      <p className="text-[#5C627D] dark:text-[#A3A9C2]">
+                    <div className="rounded-xl border border-[#334155] bg-[#223451] p-4 text-xs space-y-1">
+                      <p className="font-semibold text-[#F8FAFC]">Recorded allergies</p>
+                      <p className="text-[#A8B8CC]">
                         {selectedPatient.allergies.length > 0
                           ? selectedPatient.allergies.join(', ')
                           : 'None recorded'}
@@ -757,20 +749,20 @@ export function DoctorDashboardPage() {
                   </div>
 
                   {selectedPatientMeds.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-[#E6E0D8] p-6 text-center text-xs text-[#5C627D] dark:border-[#2B314D] dark:text-[#A3A9C2]">
+                    <p className="rounded-xl border border-dashed border-[#334155] bg-[#223451]/60 p-6 text-center text-xs text-[#A8B8CC]">
                       No medications recorded yet for {selectedPatient.name}.
                     </p>
                   ) : (
-                    <div className="divide-y divide-[#E6E0D8] rounded-xl border border-[#E6E0D8] px-4 dark:divide-[#2B314D] dark:border-[#2B314D]">
+                    <div className="divide-y divide-[#334155] rounded-xl border border-[#334155] bg-[#223451] px-4">
                       {selectedPatientMeds.map((m) => (
                         <div key={m.id} className="py-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <p className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
-                              {m.name} {m.strength} · <span className="capitalize text-[#24A99B] dark:text-[#2DD4BF]">{m.status}</span>
+                            <p className="text-sm font-semibold text-[#F8FAFC]">
+                              {m.name} {m.strength} · <span className="capitalize text-[#2DD4BF]">{m.status}</span>
                             </p>
-                            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">{m.instructions}</p>
+                            <p className="text-xs text-[#A8B8CC]">{m.instructions}</p>
                           </div>
-                          <span className="font-mono text-xs text-[#5C627D] dark:text-[#A3A9C2] tabular-nums">
+                          <span className="font-mono text-xs text-[#A8B8CC] tabular-nums">
                             {typeof m.remainingQuantity === 'number'
                               ? `${m.remainingQuantity} ${m.unitLabel} left`
                               : 'Qty unrecorded'}
@@ -781,12 +773,12 @@ export function DoctorDashboardPage() {
                   )}
 
                   <div>
-                    <h4 className="text-xs font-semibold text-[#20243A] dark:text-[#F7F5F0] mb-2">Prescription history</h4>
+                    <h4 className="text-xs font-semibold text-[#F8FAFC] mb-2">Prescription history</h4>
                     {patientRx.length === 0 ? (
-                      <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">No scanned prescriptions on file.</p>
+                      <p className="text-xs text-[#A8B8CC]">No scanned prescriptions on file.</p>
                     ) : (
                       patientRx.map((rx) => (
-                        <p key={rx.id} className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                        <p key={rx.id} className="text-xs text-[#A8B8CC]">
                           {rx.fileName} · Confirmed {formatTimestamp(rx.confirmedAt ?? rx.createdAt)}
                         </p>
                       ))
@@ -797,51 +789,51 @@ export function DoctorDashboardPage() {
                 <TabsContent value="adherence" className="space-y-6">
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <div>
-                      <h4 className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0] mb-2">
+                      <h4 className="text-sm font-semibold text-[#F8FAFC] mb-2">
                         30-day dose adherence ({selectedMetrics30?.adherencePct ?? '—'}%)
                       </h4>
                       <div className="h-56 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={selectedMetrics30?.dailySeries ?? []}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#2B314D' : '#E6E0D8'} vertical={false} />
-                            <XAxis dataKey="label" tick={{ fontSize: 10, fill: isDark ? '#A3A9C2' : '#5C627D' }} />
-                            <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: isDark ? '#A3A9C2' : '#5C627D' }} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#A8B8CC' }} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#A8B8CC' }} />
                             <Tooltip
                               contentStyle={{
-                                backgroundColor: isDark ? '#171B2E' : '#FFFFFF',
-                                borderColor: isDark ? '#2B314D' : '#E6E0D8',
-                                color: isDark ? '#F7F5F0' : '#20243A',
+                                backgroundColor: '#223451',
+                                borderColor: '#334155',
+                                color: '#F8FAFC',
                                 borderRadius: '12px',
                                 fontSize: '12px',
                               }}
                             />
-                            <Bar dataKey="taken" stackId="a" fill={isDark ? '#2DD4BF' : '#24A99B'} name="Taken" />
-                            <Bar dataKey="skipped" stackId="a" fill="#D97706" name="Skipped" />
-                            <Bar dataKey="unconfirmed" stackId="a" fill="#DC2626" name="Unconfirmed" />
+                            <Bar dataKey="taken" stackId="a" fill="#34D399" name="Taken" />
+                            <Bar dataKey="skipped" stackId="a" fill="#FBBF24" name="Skipped" />
+                            <Bar dataKey="unconfirmed" stackId="a" fill="#FB7185" name="Unconfirmed" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-[#E6E0D8] p-4 space-y-3 dark:border-[#2B314D]">
-                      <h4 className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                    <div className="rounded-xl border border-[#2DD4BF]/30 bg-[#223451] p-4 space-y-3 shadow-[0_0_20px_rgba(45,212,191,0.10)]">
+                      <h4 className="text-sm font-semibold text-[#F8FAFC]">
                         Digital Twin 14-day refill-delay preview (3-day delay)
                       </h4>
                       <div className="grid grid-cols-2 gap-3 text-xs">
                         <div>
-                          <span className="text-[#5C627D] dark:text-[#A3A9C2] block">Simulated adherence</span>
-                          <span className="font-mono text-lg font-bold text-[#24A99B] dark:text-[#2DD4BF] tabular-nums">
+                          <span className="text-[#A8B8CC] block">Simulated adherence</span>
+                          <span className="font-mono text-lg font-bold text-[#2DD4BF] tabular-nums">
                             {selectedTwin.scenarioAdherencePct}%
                           </span>
                         </div>
                         <div>
-                          <span className="text-[#5C627D] dark:text-[#A3A9C2] block">Projected supply-gap days</span>
-                          <span className="font-mono text-lg font-bold text-amber-700 dark:text-amber-400 tabular-nums">
+                          <span className="text-[#A8B8CC] block">Projected supply-gap days</span>
+                          <span className="font-mono text-lg font-bold text-[#FBBF24] tabular-nums">
                             {selectedTwin.supplyGapDates.length}
                           </span>
                         </div>
                       </div>
-                      <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                      <p className="text-xs text-[#A8B8CC]">
                         Medication-management simulation comparing baseline coverage ({selectedTwin.baselineCoveredDoses} doses) vs 3-day refill delay ({selectedTwin.scenarioCoveredDoses} doses).
                       </p>
                     </div>
@@ -851,10 +843,10 @@ export function DoctorDashboardPage() {
                 <TabsContent value="notes" className="space-y-6">
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <div className="space-y-4">
-                      <h4 className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">Record clinician note</h4>
+                      <h4 className="text-sm font-semibold text-[#F8FAFC]">Record clinician note</h4>
                       {!isDoctorVerified ? (
-                        <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
-                          Signing clinical notes is locked until your clinician verification status becomes <strong>Verified</strong>.
+                        <div className="rounded-xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 p-4 text-xs text-[#F8FAFC]">
+                          Signing clinical notes is locked until your clinician verification status becomes <strong className="text-[#FBBF24]">Verified</strong>.
                         </div>
                       ) : (
                         <form onSubmit={handleSaveNote} className="space-y-3">
@@ -878,18 +870,18 @@ export function DoctorDashboardPage() {
 
                       <div className="space-y-3 pt-2">
                         {patientNotes.length === 0 ? (
-                          <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">No clinician notes recorded yet.</p>
+                          <p className="text-xs text-[#A8B8CC]">No clinician notes recorded yet.</p>
                         ) : (
                           patientNotes.map((n) => (
-                            <div key={n.id} className="rounded-xl border border-[#E6E0D8] p-3.5 space-y-1.5 dark:border-[#2B314D]">
+                            <div key={n.id} className="rounded-xl border border-[#334155] bg-[#223451] p-3.5 space-y-1.5">
                               <div className="flex items-center justify-between text-xs">
-                                <span className="font-semibold text-[#20243A] dark:text-[#F7F5F0]">{n.title}</span>
-                                <span className="font-mono text-[#5C627D] dark:text-[#A3A9C2] tabular-nums">
+                                <span className="font-semibold text-[#F8FAFC]">{n.title}</span>
+                                <span className="font-mono text-[#A8B8CC] tabular-nums">
                                   {formatTimestamp(n.createdAt)}
                                 </span>
                               </div>
-                              <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2] whitespace-pre-wrap">{n.content}</p>
-                              <p className="text-[11px] text-[#5C627D] dark:text-[#A3A9C2]">
+                              <p className="text-xs text-[#A8B8CC] whitespace-pre-wrap">{n.content}</p>
+                              <p className="text-[11px] text-[#A8B8CC]">
                                 Audit: {n.auditTrail.map((a) => `${a.action} by ${a.actor}`).join(' · ')}
                               </p>
                             </div>
@@ -899,30 +891,30 @@ export function DoctorDashboardPage() {
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                      <h4 className="text-sm font-semibold text-[#F8FAFC]">
                         Uploaded reports &amp; Dadi-Nani patient shares
                       </h4>
                       {patientReports.length === 0 && patientDadiNani.length === 0 && (
-                        <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                        <p className="text-xs text-[#A8B8CC]">
                           No reports or shared patient comfort notes yet.
                         </p>
                       )}
                       {patientReports.map((r) => (
-                        <div key={r.id} className="rounded-xl border border-[#E6E0D8] p-3.5 text-xs space-y-1 dark:border-[#2B314D]">
-                          <p className="font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                        <div key={r.id} className="rounded-xl border border-[#334155] bg-[#223451] p-3.5 text-xs space-y-1">
+                          <p className="font-semibold text-[#F8FAFC]">
                             {r.title} ({r.reportType})
                           </p>
-                          <p className="text-[#5C627D] dark:text-[#A3A9C2]">{r.summaryNote}</p>
+                          <p className="text-[#A8B8CC]">{r.summaryNote}</p>
                         </div>
                       ))}
                       {patientDadiNani.map((d) => (
-                        <div key={d.id} className="rounded-xl border border-amber-200 bg-amber-50/40 p-3.5 text-xs space-y-1 dark:border-amber-700/50 dark:bg-amber-950/20">
-                          <p className="font-semibold text-amber-900 dark:text-amber-300">
+                        <div key={d.id} className="rounded-xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 p-3.5 text-xs space-y-1">
+                          <p className="font-semibold text-[#FBBF24]">
                             Patient Dadi-Nani share · {formatTimestamp(d.createdAt)}
                           </p>
-                          <p className="text-[#20243A] dark:text-[#F7F5F0]">{d.feelingSummary}</p>
+                          <p className="text-[#F8FAFC]">{d.feelingSummary}</p>
                           {d.homeComfortNote && (
-                            <p className="text-[#24A99B] dark:text-[#2DD4BF]">Home comfort: {d.homeComfortNote}</p>
+                            <p className="text-[#2DD4BF]">Home comfort: {d.homeComfortNote}</p>
                           )}
                         </div>
                       ))}
@@ -931,37 +923,26 @@ export function DoctorDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="team" className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="rounded-xl border border-[#E6E0D8] p-4 space-y-2 dark:border-[#2B314D]">
-                      <h4 className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">Authorized caregiver contacts</h4>
-                      {patientCaregivers.length === 0 ? (
-                        <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">No accepted caregivers.</p>
-                      ) : (
-                        patientCaregivers.map((c) => (
-                          <div key={c.id} className="text-xs text-[#5C627D] dark:text-[#A3A9C2] flex justify-between">
-                            <span>
-                              <strong className="text-[#20243A] dark:text-[#F7F5F0]">{c.caregiverName}</strong> ({c.relationship} · {c.contactPriority})
-                            </span>
-                            <span className="text-[#24A99B] dark:text-[#2DD4BF] inline-flex items-center gap-1">
-                              <CheckCircle2 className="h-3.5 w-3.5" /> Consented
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                  <CaregiverContactsSection
+                    patient={selectedPatient}
+                    canManageContacts={false}
+                    acceptedOnly
+                    compact
+                    title="Authorized Caregiver Contacts"
+                    description="Patient-approved family caregivers. Clinicians can preview or confirm follow-up WhatsApp/SMS outreach; caregiver list edits remain patient-owned."
+                  />
 
-                    <div className="rounded-xl border border-[#E6E0D8] p-4 space-y-2 dark:border-[#2B314D]">
-                      <h4 className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">Follow-up timeline</h4>
-                      <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
-                        Next follow-up:{' '}
-                        {selectedPatient.nextFollowUpDate
-                          ? formatShortDate(selectedPatient.nextFollowUpDate)
-                          : 'Not scheduled'}
-                      </p>
-                      <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
-                        Last clinician review: {formatShortDate(selectedPatient.lastReviewDate)}
-                      </p>
-                    </div>
+                  <div className="rounded-xl border border-[#334155] bg-[#223451] p-4 space-y-2">
+                    <h4 className="text-sm font-semibold text-[#F8FAFC]">Follow-up timeline</h4>
+                    <p className="text-xs text-[#A8B8CC]">
+                      Next follow-up:{' '}
+                      {selectedPatient.nextFollowUpDate
+                        ? formatShortDate(selectedPatient.nextFollowUpDate)
+                        : 'Not scheduled'}
+                    </p>
+                    <p className="text-xs text-[#A8B8CC]">
+                      Last clinician review: {formatShortDate(selectedPatient.lastReviewDate)}
+                    </p>
                   </div>
                 </TabsContent>
               </Tabs>

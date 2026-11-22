@@ -41,8 +41,8 @@ export function RevokeDialog({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[#172554] dark:text-[#F8FAFC]">
-            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <DialogTitle className="flex items-center gap-2 text-[#F8FAFC]">
+            <AlertTriangle className="h-5 w-5 text-[#FBBF24] shrink-0" />
             <span>Revoke Care Circle consent</span>
           </DialogTitle>
           <DialogDescription>
@@ -52,11 +52,11 @@ export function RevokeDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 space-y-1 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
-            <p className="font-semibold">
+          <div className="rounded-xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 p-3 text-xs text-[#F8FAFC] space-y-1">
+            <p className="font-semibold text-[#FBBF24]">
               Access scopes being revoked ({consent.scopes.length}/4 active):
             </p>
-            <p className="text-amber-800 dark:text-amber-300">
+            <p className="text-[#A8B8CC]">
               {consent.scopes.length > 0
                 ? consent.scopes.join(', ')
                 : 'Invitation pending or minimal contact link'}
@@ -66,7 +66,7 @@ export function RevokeDialog({
           <div>
             <label
               htmlFor="revoke-reason-note"
-              className="block text-xs font-medium text-[#172554] dark:text-[#F8FAFC] mb-1.5"
+              className="block text-xs font-medium text-[#F8FAFC] mb-1.5"
             >
               Optional note (for demo care log)
             </label>

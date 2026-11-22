@@ -1,5 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
+  AlertDeliveryState,
+  CareAlertChannel,
+  CareAlertType,
   CaregiverConnection,
   CaregiverPermissions,
   DadiNaniEntry,
@@ -7,6 +10,7 @@ import {
   FamilyMedicalHistoryItem,
   MedTwinState,
   MedicationStatus,
+  MessagingProviderStatus,
   Patient,
   WorkspaceRole,
 } from '@/src/types/medtwin';
@@ -16,6 +20,7 @@ import {
   ConfirmPrescriptionInput,
   CreateCaregiverInviteInput,
   LogDoseInput,
+  UpdateCaregiverContactInput,
   demoMedTwinService,
 } from '@/src/services/medtwinService';
 import {
@@ -97,12 +102,33 @@ interface MedTwinContextValue {
   createSimulatedAlert: (input: {
     patientId: string;
     caregiverId?: string;
+    alertType?: CareAlertType;
+    channel?: CareAlertChannel;
+    recipientPhone?: string;
+    messageBody?: string;
     title: string;
     reason: string;
     severity: 'attention' | 'urgent';
   }) => boolean;
+  dispatchCaregiverAlert: (input: {
+    patientId: string;
+    connectionId?: string;
+    caregiverId?: string;
+    caregiverName?: string;
+    alertType: CareAlertType;
+    channel: CareAlertChannel;
+    recipientPhone?: string;
+    title: string;
+    reason: string;
+    messageBody: string;
+    severity?: 'attention' | 'urgent';
+    deliveryMode: 'draft' | 'opened_messaging_app' | 'automated';
+  }) => Promise<{ ok: boolean; error?: string }>;
+  providerStatus: MessagingProviderStatus;
   acknowledgeAlert: (alertId: string, followUpNote?: string) => void;
   inviteCaregiver: (input: CreateCaregiverInviteInput) => void;
+  updateCaregiverContact: (input: UpdateCaregiverContactInput) => void;
+  removeCaregiverContact: (connectionId: string) => void;
   requestPatientConnectionAsCaregiver: (
     patientEmailOrMrn: string,
     relationship: CreateCaregiverInviteInput['relationship'],
@@ -146,6 +172,27 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
   const [dadiNaniMode, setDadiNaniMode] = useState<boolean>(false);
   const [dadiNaniLanguage, setDadiNaniLanguage] = useState<'en' | 'hi' | 'pa'>('en');
   const [assistantOpen, setAssistantOpen] = useState<boolean>(false);
+  const [providerStatus, setProviderStatus] = useState<MessagingProviderStatus>({
+    whatsappProviderConfigured: false,
+    smsProviderConfigured: false,
+    whatsappProviderLabel: 'Not configured (manual WhatsApp launch ready)',
+    smsProviderLabel: 'Not configured (manual SMS app launch ready)',
+  });
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/alerts/provider-status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: MessagingProviderStatus | null) => {
+        if (active && data) setProviderStatus(data);
+      })
+      .catch(() => {
+        // Safe offline default
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const isRealAccountMode = Boolean(isAuthenticated && user);
 
@@ -446,14 +493,18 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
     (input: {
       patientId: string;
       caregiverId?: string;
+      alertType?: CareAlertType;
+      channel?: CareAlertChannel;
+      recipientPhone?: string;
+      messageBody?: string;
       title: string;
       reason: string;
       severity: 'attention' | 'urgent';
     }) => {
       if (isRealAccountMode) {
         pushToast({
-          title: 'Alert notification rules active',
-          description: 'Caregiver alerts are governed by patient consent and notification settings.',
+          title: 'Alert rules active',
+          description: 'Use WhatsApp, SMS, or configured automated alert dispatch for registered accounts.',
           variant: 'info',
         });
         return true;
@@ -467,19 +518,124 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
       if (created) {
         pushToast({
           title: 'Simulated caregiver alert sent',
-          description: 'Visible in Care Circle and Caregiver Workspace.',
+          description: 'Visible in Caregiver Contacts, Caregiver Hub, and Alert History.',
           variant: 'warning',
         });
       } else {
         pushToast({
           title: 'No consented caregiver recipient',
-          description: 'Enable "Receive dose alerts" on an accepted Care Circle member first.',
+          description: 'Enable "Receive dose alerts" on an accepted Care Circle contact first.',
           variant: 'error',
         });
       }
       return created;
     },
     [isRealAccountMode, pushToast],
+  );
+
+  const dispatchCaregiverAlert = useCallback(
+    async (input: {
+      patientId: string;
+      connectionId?: string;
+      caregiverId?: string;
+      caregiverName?: string;
+      alertType: CareAlertType;
+      channel: CareAlertChannel;
+      recipientPhone?: string;
+      title: string;
+      reason: string;
+      messageBody: string;
+      severity?: 'attention' | 'urgent';
+      deliveryMode: 'draft' | 'opened_messaging_app' | 'automated';
+    }): Promise<{ ok: boolean; error?: string }> => {
+      if (isRealAccountMode) {
+        try {
+          const res = await apiFetch<
+            ScopedWorkspacePayload & {
+              providerConfirmed: boolean;
+              providerConfigured: boolean;
+              error?: string;
+            }
+          >('/api/alerts/dispatch', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          });
+          applyScopedPayload(res);
+          pushToast({
+            title:
+              input.deliveryMode === 'opened_messaging_app'
+                ? `${input.channel.toUpperCase()} link opened`
+                : input.deliveryMode === 'draft'
+                  ? 'Alert draft saved'
+                  : 'Automated alert dispatched',
+            description:
+              input.deliveryMode === 'opened_messaging_app'
+                ? 'Recorded "Opened Messaging App" in Alert History.'
+                : res.error,
+            variant: input.deliveryMode === 'draft' ? 'info' : 'success',
+          });
+          return { ok: true };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unable to send alert.';
+          pushToast({
+            title: 'Messaging delivery unavailable',
+            description: msg,
+            variant: 'error',
+          });
+          return { ok: false, error: msg };
+        }
+      }
+
+      // Demo mode: never claim automated provider delivery unless explicitly simulated
+      if (input.deliveryMode === 'automated') {
+        const providerMissing =
+          (input.channel === 'whatsapp' && !providerStatus.whatsappProviderConfigured) ||
+          (input.channel === 'sms' && !providerStatus.smsProviderConfigured);
+        if (providerMissing) {
+          const msg =
+            'Automated WhatsApp/SMS delivery is unavailable without provider API credentials. Use manual WhatsApp / SMS or Demo Simulation.';
+          pushToast({
+            title: 'Automated delivery unavailable',
+            description: msg,
+            variant: 'warning',
+          });
+          return { ok: false, error: msg };
+        }
+      }
+
+      const nextDeliveryState: AlertDeliveryState =
+        input.deliveryMode === 'automated' ? 'sent' : input.deliveryMode;
+
+      setDemoState((prev) =>
+        demoMedTwinService.recordAlertEvent(prev, {
+          ...input,
+          deliveryState: nextDeliveryState,
+          simulated: true,
+          actorName: activeDemoAccount.actorName,
+          actorRole: activeRole,
+        }),
+      );
+      pushToast({
+        title:
+          nextDeliveryState === 'opened_messaging_app'
+            ? 'Messaging app prepared (Demo)'
+            : nextDeliveryState === 'draft'
+              ? 'Alert draft saved'
+              : 'Simulated alert logged',
+        description: 'Recorded in Caregiver Alert History.',
+        variant: nextDeliveryState === 'draft' ? 'info' : 'success',
+      });
+      return { ok: true };
+    },
+    [
+      activeDemoAccount.actorName,
+      activeRole,
+      applyScopedPayload,
+      isRealAccountMode,
+      providerStatus.smsProviderConfigured,
+      providerStatus.whatsappProviderConfigured,
+      pushToast,
+    ],
   );
 
   const acknowledgeAlert = useCallback(
@@ -501,20 +657,62 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
     (input: CreateCaregiverInviteInput) => {
       if (isRealAccountMode) {
         void runServerMutation('/api/access/caregiver-request', input, {
-          title: 'Care Circle invitation created',
-          description: `Invitation sent to ${input.caregiverName}.`,
+          title: 'Caregiver contact added',
+          description: `Invitation prepared for ${input.caregiverName}. Consent acceptance required before sharing medication details.`,
           variant: 'success',
         });
         return;
       }
       setDemoState((prev) => demoMedTwinService.inviteCaregiver(prev, input));
       pushToast({
-        title: 'Care Circle invitation created',
-        description: `Sent simulated invite to ${input.caregiverName}.`,
+        title: 'Caregiver contact added',
+        description: `Created simulated invitation for ${input.caregiverName}.`,
         variant: 'success',
       });
     },
     [isRealAccountMode, pushToast, runServerMutation],
+  );
+
+  const updateCaregiverContact = useCallback(
+    (input: UpdateCaregiverContactInput) => {
+      if (isRealAccountMode) {
+        void runServerMutation('/api/access/caregiver-update', input, {
+          title: 'Caregiver contact updated',
+          description: 'Contact details and alert preferences saved.',
+          variant: 'success',
+        });
+        return;
+      }
+      setDemoState((prev) => demoMedTwinService.updateCaregiverContact(prev, input));
+      pushToast({
+        title: 'Caregiver contact updated',
+        description: 'Contact details and alert preferences saved.',
+        variant: 'success',
+      });
+    },
+    [isRealAccountMode, pushToast, runServerMutation],
+  );
+
+  const removeCaregiverContact = useCallback(
+    (connectionId: string) => {
+      if (isRealAccountMode) {
+        void runServerMutation('/api/access/caregiver-remove', { connectionId }, {
+          title: 'Caregiver contact removed',
+          description: 'Contact removed and Care Circle data sharing ended.',
+          variant: 'warning',
+        });
+        return;
+      }
+      setDemoState((prev) =>
+        demoMedTwinService.removeCaregiverContact(prev, connectionId, activeDemoAccount.actorName),
+      );
+      pushToast({
+        title: 'Caregiver contact removed',
+        description: 'Contact removed and Care Circle data sharing ended.',
+        variant: 'warning',
+      });
+    },
+    [activeDemoAccount.actorName, isRealAccountMode, pushToast, runServerMutation],
   );
 
   const requestPatientConnectionAsCaregiver = useCallback(
@@ -788,8 +986,12 @@ export function MedTwinProvider({ children }: { children: React.ReactNode }) {
     updateMedicationStatus,
     replenishMedicationStock,
     createSimulatedAlert,
+    dispatchCaregiverAlert,
+    providerStatus,
     acknowledgeAlert,
     inviteCaregiver,
+    updateCaregiverContact,
+    removeCaregiverContact,
     requestPatientConnectionAsCaregiver,
     respondCaregiverInvite,
     updateCaregiverPermissions,

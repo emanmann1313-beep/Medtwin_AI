@@ -6,6 +6,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import {
   createPasswordResetRequest,
   destroySession,
+  getMessagingProviderStatus,
   getScopedWorkspaceForUser,
   getSessionUser,
   isSupabaseConfigured,
@@ -13,14 +14,17 @@ import {
   mutateAddClinicianNote,
   mutateAddDadiNaniEntry,
   mutateConfirmPrescription,
+  mutateDispatchCaregiverAlert,
   mutateDoctorAuthorization,
   mutateEnrollHospitalPatient,
   mutateInviteOrRequestCaregiver,
   mutateLogDose,
   mutateMedicationStatus,
+  mutateRemoveCaregiverContact,
   mutateReplenishMedication,
   mutateRespondCaregiverConnection,
   mutateUndoDose,
+  mutateUpdateCaregiverContact,
   mutateUpdateCaregiverPermissions,
   registerUserAccount,
   resetPasswordWithToken,
@@ -347,6 +351,57 @@ async function startServer() {
     } catch (err) {
       const status = (err as { status?: number })?.status ?? 500;
       res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to update permissions.' });
+    }
+  });
+
+  app.post('/api/access/caregiver-update', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateUpdateCaregiverContact(user, req.body ?? {});
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to update caregiver contact.' });
+    }
+  });
+
+  app.post('/api/access/caregiver-remove', (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      mutateRemoveCaregiverContact(user, req.body?.connectionId);
+      res.json(getScopedWorkspaceForUser(user));
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to remove caregiver contact.' });
+    }
+  });
+
+  app.get('/api/alerts/provider-status', (_req, res) => {
+    res.json(getMessagingProviderStatus());
+  });
+
+  app.post('/api/alerts/dispatch', async (req, res) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    try {
+      const outcome = await mutateDispatchCaregiverAlert(user, req.body ?? {});
+      const workspace = getScopedWorkspaceForUser(user);
+      if (!outcome.providerConfirmed && outcome.error && req.body?.deliveryMode === 'automated') {
+        res.status(outcome.providerConfigured ? 502 : 503).json({
+          ...outcome,
+          ...workspace,
+        });
+        return;
+      }
+      res.json({
+        ...outcome,
+        ...workspace,
+      });
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      res.status(status).json({ error: err instanceof Error ? err.message : 'Failed to dispatch caregiver alert.' });
     }
   });
 

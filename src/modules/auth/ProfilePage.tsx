@@ -140,21 +140,21 @@ export function ProfilePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 text-xs">
-            <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 dark:border-[#2B314D] dark:bg-[#101322]">
-              <span className="text-[#5C627D] dark:text-[#A3A9C2] block">Role</span>
-              <span className="mt-1 font-display text-base font-bold capitalize text-[#20243A] dark:text-[#F7F5F0] block">
+            <div className="rounded-xl border border-[#334155] bg-[#223451] p-4">
+              <span className="text-[#A8B8CC] block">Role</span>
+              <span className="mt-1 font-display text-base font-bold capitalize text-[#F8FAFC] block">
                 {user.role.replace('_', ' ')}
               </span>
             </div>
 
-            <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 dark:border-[#2B314D] dark:bg-[#101322]">
-              <span className="text-[#5C627D] dark:text-[#A3A9C2] block">Email status</span>
+            <div className="rounded-xl border border-[#334155] bg-[#223451] p-4">
+              <span className="text-[#A8B8CC] block">Email status</span>
               <span
                 className={cn(
                   'mt-1 inline-flex items-center gap-1.5 font-display text-sm font-bold',
                   user.emailVerified
-                    ? 'text-[#24A99B] dark:text-[#2DD4BF]'
-                    : 'text-amber-700 dark:text-amber-400',
+                    ? 'text-[#34D399]'
+                    : 'text-[#FBBF24]',
                 )}
               >
                 {user.emailVerified ? (
@@ -171,14 +171,14 @@ export function ProfilePage() {
               </span>
             </div>
 
-            <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 dark:border-[#2B314D] dark:bg-[#101322]">
-              <span className="text-[#5C627D] dark:text-[#A3A9C2] block">Credential status</span>
+            <div className="rounded-xl border border-[#334155] bg-[#223451] p-4">
+              <span className="text-[#A8B8CC] block">Credential status</span>
               <span
                 className={cn(
                   'mt-1 inline-flex items-center gap-1.5 font-display text-sm font-bold capitalize',
                   user.verificationStatus === 'verified'
-                    ? 'text-[#24A99B] dark:text-[#2DD4BF]'
-                    : 'text-amber-700 dark:text-amber-400',
+                    ? 'text-[#34D399]'
+                    : 'text-[#FBBF24]',
                 )}
               >
                 {user.verificationStatus === 'verified' ? (
@@ -192,8 +192,8 @@ export function ProfilePage() {
           </div>
 
           {!user.emailVerified && (
-            <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 space-y-3 dark:border-[#2B314D] dark:bg-[#101322]">
-              <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+            <div className="rounded-xl border border-[#334155] bg-[#223451] p-4 space-y-3">
+              <p className="text-xs text-[#A8B8CC]">
                 {supabaseConfigured
                   ? 'Check your inbox for a verification link, or paste your verification token below.'
                   : 'Outbound verification emails are not configured in this environment. If you have a verification token from registration, paste it below to confirm your email.'}
@@ -226,7 +226,7 @@ export function ProfilePage() {
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold mb-1.5" htmlFor="prof-name">
+                <label className="block text-xs font-semibold text-[#F8FAFC] mb-1.5" htmlFor="prof-name">
                   Full name
                 </label>
                 <Input
@@ -237,7 +237,7 @@ export function ProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1.5" htmlFor="prof-phone">
+                <label className="block text-xs font-semibold text-[#F8FAFC] mb-1.5" htmlFor="prof-phone">
                   Phone number
                 </label>
                 <Input
@@ -248,14 +248,14 @@ export function ProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1.5" htmlFor="prof-lang">
+                <label className="block text-xs font-semibold text-[#F8FAFC] mb-1.5" htmlFor="prof-lang">
                   Preferred language
                 </label>
                 <select
                   id="prof-lang"
                   value={preferredLanguage}
                   onChange={(e) => setPreferredLanguage(e.target.value as 'en' | 'hi' | 'pa')}
-                  className="h-10 w-full rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 text-sm text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                  className="h-10 w-full rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-sm text-[#F8FAFC]"
                 >
                   <option value="en">English</option>
                   <option value="hi">Hindi (हिन्दी)</option>
@@ -263,7 +263,7 @@ export function ProfilePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1.5" htmlFor="prof-country">
+                <label className="block text-xs font-semibold text-[#F8FAFC] mb-1.5" htmlFor="prof-country">
                   Country
                 </label>
                 <Input
@@ -277,7 +277,7 @@ export function ProfilePage() {
               {user.role === 'doctor' && (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold mb-1.5" htmlFor="prof-spec">
+                    <label className="block text-xs font-semibold text-[#F8FAFC] mb-1.5" htmlFor="prof-spec">
                       Specialty
                     </label>
                     <Input
@@ -287,7 +287,7 @@ export function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold mb-1.5" htmlFor="prof-aff">
+                    <label className="block text-xs font-semibold text-[#F8FAFC] mb-1.5" htmlFor="prof-aff">
                       Clinic / hospital affiliation
                     </label>
                     <Input
@@ -301,7 +301,7 @@ export function ProfilePage() {
 
               {(user.role === 'doctor' || user.role === 'hospital_admin') && (
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold mb-1.5" htmlFor="prof-contact">
+                  <label className="block text-xs font-semibold text-[#F8FAFC] mb-1.5" htmlFor="prof-contact">
                     Contact information
                   </label>
                   <Input
@@ -314,7 +314,7 @@ export function ProfilePage() {
 
               {user.role === 'hospital_admin' && (
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold mb-1.5" htmlFor="prof-addr">
+                  <label className="block text-xs font-semibold text-[#F8FAFC] mb-1.5" htmlFor="prof-addr">
                     Hospital address
                   </label>
                   <Input
@@ -345,7 +345,7 @@ export function ProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-[#24A99B] dark:text-[#2DD4BF]" />
+              <UserCheck className="h-5 w-5 text-[#2DD4BF]" />
               <span>Authorized Doctors</span>
             </CardTitle>
             <CardDescription>
@@ -367,23 +367,23 @@ export function ProfilePage() {
             </form>
 
             {doctorAuthorizations.length === 0 ? (
-              <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+              <p className="text-xs text-[#A8B8CC]">
                 No doctors authorized yet.
               </p>
             ) : (
-              <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+              <div className="divide-y divide-[#334155]">
                 {doctorAuthorizations.map((auth) => (
                   <div
                     key={auth.id}
                     className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between text-xs"
                   >
                     <div>
-                      <p className="font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+                      <p className="font-semibold text-[#F8FAFC]">
                         {auth.doctorName}{' '}
                         {auth.doctorSpecialty ? `· ${auth.doctorSpecialty}` : ''}
                       </p>
-                      <p className="text-[#5C627D] dark:text-[#A3A9C2]">
-                        Status: <span className="capitalize font-medium">{auth.status}</span> · Updated{' '}
+                      <p className="text-[#A8B8CC]">
+                        Status: <span className="capitalize font-medium text-[#2DD4BF]">{auth.status}</span> · Updated{' '}
                         {formatShortDate(auth.updatedAt.slice(0, 10))}
                       </p>
                     </div>

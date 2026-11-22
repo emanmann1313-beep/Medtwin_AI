@@ -111,11 +111,11 @@ export function CareHistoryPage() {
     return (
       <Card>
         <CardContent className="py-12 text-center space-y-3">
-          <History className="mx-auto h-9 w-9 text-[#7956C8] dark:text-[#A58AE8]" />
-          <h3 className="font-display text-lg font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+          <History className="mx-auto h-9 w-9 text-[#8B5CF6]" />
+          <h3 className="font-display text-lg font-semibold text-[#F8FAFC]">
             No shared care history yet
           </h3>
-          <p className="mx-auto max-w-md text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+          <p className="mx-auto max-w-md text-xs text-[#A8B8CC]">
             Shared medication history, prescription records, and refill events will appear once an authorized patient connection is active.
           </p>
         </CardContent>
@@ -127,11 +127,11 @@ export function CareHistoryPage() {
     return (
       <Card>
         <CardContent className="py-12 text-center space-y-3">
-          <ShieldAlert className="mx-auto h-10 w-10 text-amber-600 dark:text-amber-400" />
-          <h3 className="font-display text-lg font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+          <ShieldAlert className="mx-auto h-10 w-10 text-[#FBBF24]" />
+          <h3 className="font-display text-lg font-semibold text-[#F8FAFC]">
             History &amp; Reports permission required
           </h3>
-          <p className="mx-auto max-w-md text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+          <p className="mx-auto max-w-md text-sm text-[#A8B8CC]">
             Your current Care Circle connection for {activePatient.name} does not include permission to view care history and reports.
           </p>
         </CardContent>
@@ -163,7 +163,7 @@ export function CareHistoryPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative w-full lg:max-w-sm">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5C627D] dark:text-[#A3A9C2]" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A8B8CC]" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -183,8 +183,8 @@ export function CareHistoryPage() {
                   className={cn(
                     'rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                     categoryFilter === opt.id
-                      ? 'bg-[#7956C8] text-white dark:bg-[#A58AE8] dark:text-[#101322]'
-                      : 'border border-[#E6E0D8] bg-[#FAF8F5] text-[#5C627D] hover:bg-[#D8C5E8]/35 hover:text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#A3A9C2] dark:hover:bg-[#1E243D] dark:hover:text-[#F7F5F0]',
+                      ? 'bg-[#8B5CF6] text-white shadow-[0_0_12px_rgba(139,92,246,0.28)]'
+                      : 'border border-[#334155] bg-[#223451] text-[#A8B8CC] hover:bg-[#1A2740] hover:text-[#F8FAFC]',
                   )}
                 >
                   {opt.label}
@@ -194,34 +194,34 @@ export function CareHistoryPage() {
           </div>
 
           {!canViewClinicianNotes && (
-            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="text-xs text-[#A8B8CC]">
               Clinician-only notes are hidden based on current workspace permissions.
             </p>
           )}
 
           {unifiedTimeline.length === 0 ? (
-            <p className="py-10 text-center text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="py-10 text-center text-sm text-[#A8B8CC]">
               No care history records match your current search or filter.
             </p>
           ) : (
-            <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+            <div className="divide-y divide-[#334155]">
               {unifiedTimeline.map((ev) => (
                 <div
                   key={ev.id}
                   className="flex flex-col gap-1.5 py-3.5 first:pt-1 last:pb-1 sm:flex-row sm:items-start sm:justify-between"
                 >
                   <div className="space-y-0.5 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
-                      <span className="font-semibold uppercase tracking-wide text-[#24A99B] dark:text-[#2DD4BF]">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#A8B8CC]">
+                      <span className="font-semibold uppercase tracking-wide text-[#2DD4BF]">
                         {ev.category.replace('_', ' ')}
                       </span>
                       <span aria-hidden="true">·</span>
                       <span>Recorded by {ev.actorName}</span>
                     </div>
-                    <p className="text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">{ev.title}</p>
-                    <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">{ev.details}</p>
+                    <p className="text-sm font-semibold text-[#F8FAFC]">{ev.title}</p>
+                    <p className="text-xs text-[#A8B8CC]">{ev.details}</p>
                   </div>
-                  <span className="font-mono text-xs text-[#5C627D] dark:text-[#A3A9C2] tabular-nums shrink-0">
+                  <span className="font-mono text-xs text-[#A8B8CC] tabular-nums shrink-0">
                     {formatTimestamp(ev.timestamp)}
                   </span>
                 </div>

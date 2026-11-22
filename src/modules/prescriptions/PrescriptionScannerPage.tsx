@@ -418,13 +418,13 @@ export function PrescriptionScannerPage() {
                     className={cn(
                       'px-2.5 py-1 rounded-lg',
                       step === s.id
-                        ? 'bg-[#7956C8] text-white font-semibold dark:bg-[#A58AE8] dark:text-[#101322]'
-                        : 'text-[#5C627D] bg-[#FAF8F5] border border-[#E6E0D8] dark:text-[#A3A9C2] dark:bg-[#101322] dark:border-[#2B314D]',
+                        ? 'bg-[#8B5CF6] text-white font-semibold shadow-[0_0_12px_rgba(139,92,246,0.28)]'
+                        : 'text-[#A8B8CC] bg-[#223451] border border-[#334155]',
                     )}
                   >
                     {s.label}
                   </span>
-                  {idx < 3 && <span className="text-[#D8C5E8] dark:text-[#2B314D]">/</span>}
+                  {idx < 3 && <span className="text-[#334155]">/</span>}
                 </React.Fragment>
               ))}
             </div>
@@ -448,12 +448,12 @@ export function PrescriptionScannerPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#D8C5E8] bg-[#FAF8F5] px-6 py-12 text-center dark:border-[#2B314D] dark:bg-[#101322]">
-              <Upload className="h-9 w-9 text-[#7956C8] dark:text-[#A58AE8]" />
-              <p className="mt-3 text-sm font-semibold text-[#20243A] dark:text-[#F7F5F0]">
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#334155] bg-[#223451]/60 px-6 py-12 text-center">
+              <Upload className="h-9 w-9 text-[#8B5CF6]" />
+              <p className="mt-3 text-sm font-semibold text-[#F8FAFC]">
                 Upload image, take a photo, or choose a PDF
               </p>
-              <p className="mt-1 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+              <p className="mt-1 text-xs text-[#A8B8CC]">
                 Gemini AI extracts medication fields and highlights unclear text for your verification before saving.
               </p>
               <input
@@ -490,7 +490,7 @@ export function PrescriptionScannerPage() {
             </div>
 
             {validationError && (
-              <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-300">
+              <div className="flex items-center gap-2 rounded-xl border border-[#FB7185]/35 bg-[#FB7185]/10 p-3 text-xs text-[#FB7185]">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 <span>{validationError}</span>
               </div>
@@ -509,13 +509,13 @@ export function PrescriptionScannerPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {selectedFile.mimeType === 'application/pdf' ? (
-                <div className="flex flex-col items-center justify-center rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-10 text-center dark:border-[#2B314D] dark:bg-[#101322]">
-                  <FileText className="h-10 w-10 text-[#7956C8] dark:text-[#A58AE8]" />
-                  <p className="mt-2 text-sm font-medium">{selectedFile.name}</p>
-                  <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">PDF ready for AI extraction</p>
+                <div className="flex flex-col items-center justify-center rounded-xl border border-[#334155] bg-[#223451] p-10 text-center">
+                  <FileText className="h-10 w-10 text-[#8B5CF6]" />
+                  <p className="mt-2 text-sm font-medium text-[#F8FAFC]">{selectedFile.name}</p>
+                  <p className="text-xs text-[#A8B8CC]">PDF ready for AI extraction</p>
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] dark:border-[#2B314D] dark:bg-[#101322]">
+                <div className="overflow-hidden rounded-xl border border-[#334155] bg-[#0B1220]">
                   <img
                     src={selectedFile.previewUrl}
                     alt={`Uploaded prescription ${selectedFile.name}`}
@@ -570,12 +570,12 @@ export function PrescriptionScannerPage() {
               {step === 'preview' && (
                 <div className="space-y-4">
                   {extractError ? (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 space-y-2 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
+                    <div className="rounded-xl border border-[#FBBF24]/35 bg-[#FBBF24]/10 p-4 text-xs text-[#FBBF24] space-y-2">
                       <div className="flex items-start gap-2">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#FBBF24]" />
                         <div>
                           <p className="font-semibold">Extraction issue</p>
-                          <p className="mt-0.5">{extractError}</p>
+                          <p className="mt-0.5 text-[#F8FAFC]">{extractError}</p>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2 pt-1">
@@ -604,8 +604,8 @@ export function PrescriptionScannerPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-5 space-y-3 dark:border-[#2B314D] dark:bg-[#101322]">
-                      <p className="text-sm">
+                    <div className="rounded-xl border border-[#334155] bg-[#223451] p-5 space-y-3">
+                      <p className="text-sm text-[#F8FAFC]">
                         Click <strong>Extract prescription fields</strong> to read medicine names, dosages, frequencies, durations, and instructions.
                       </p>
                       <Button
@@ -630,7 +630,7 @@ export function PrescriptionScannerPage() {
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <div>
-                      <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                      <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                         Prescriber
                       </label>
                       <Input
@@ -640,7 +640,7 @@ export function PrescriptionScannerPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                      <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                         Clinic / Hospital
                       </label>
                       <Input
@@ -650,7 +650,7 @@ export function PrescriptionScannerPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                      <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                         Prescription date
                       </label>
                       <Input
@@ -663,7 +663,7 @@ export function PrescriptionScannerPage() {
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold">Extracted medications ({items.length})</h4>
+                      <h4 className="text-sm font-semibold text-[#F8FAFC]">Extracted medications ({items.length})</h4>
                       <Button type="button" variant="outline" size="sm" onClick={addBlankMedication}>
                         <Plus className="h-3.5 w-3.5" />
                         <span>Add medicine</span>
@@ -682,15 +682,15 @@ export function PrescriptionScannerPage() {
                           className={cn(
                             'rounded-xl border p-4 space-y-3',
                             hasUnclear
-                              ? 'border-amber-300 bg-amber-50/30 dark:border-amber-700/60 dark:bg-amber-950/20'
-                              : 'border-[#E6E0D8] bg-[#FAF8F5] dark:border-[#2B314D] dark:bg-[#101322]',
+                              ? 'border-[#FBBF24]/40 bg-[#FBBF24]/10'
+                              : 'border-[#334155] bg-[#223451]',
                           )}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-semibold">Medication #{idx + 1}</span>
+                            <span className="text-xs font-semibold text-[#F8FAFC]">Medication #{idx + 1}</span>
                             <div className="flex items-center gap-3">
                               {hasUnclear && (
-                                <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                                <span className="text-xs font-medium text-[#FBBF24]">
                                   Needs review: {item.unclearFields.join(', ') || 'missing field'}
                                 </span>
                               )}
@@ -699,7 +699,7 @@ export function PrescriptionScannerPage() {
                                   type="button"
                                   onClick={() => setItems((prev) => prev.filter((x) => x.id !== item.id))}
                                   aria-label="Remove medication row"
-                                  className="text-[#5C627D] hover:text-red-600 cursor-pointer"
+                                  className="text-[#A8B8CC] hover:text-[#FB7185] cursor-pointer"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -709,7 +709,7 @@ export function PrescriptionScannerPage() {
 
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
-                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                              <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                                 Medicine name *
                               </label>
                               <Input
@@ -719,7 +719,7 @@ export function PrescriptionScannerPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                              <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                                 Dosage / strength
                               </label>
                               <Input
@@ -729,7 +729,7 @@ export function PrescriptionScannerPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                              <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                                 Dose &amp; route *
                               </label>
                               <Input
@@ -739,7 +739,7 @@ export function PrescriptionScannerPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                              <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                                 Frequency
                               </label>
                               <Input
@@ -749,7 +749,7 @@ export function PrescriptionScannerPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                              <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                                 Duration (days)
                               </label>
                               <Input
@@ -766,7 +766,7 @@ export function PrescriptionScannerPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                              <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                                 Quantity dispensed
                               </label>
                               <Input
@@ -785,7 +785,7 @@ export function PrescriptionScannerPage() {
                           </div>
 
                           <div>
-                            <label className="block text-xs font-medium text-[#5C627D] dark:text-[#A3A9C2] mb-1">
+                            <label className="block text-xs font-medium text-[#A8B8CC] mb-1">
                               Instructions *
                             </label>
                             <Input
@@ -799,13 +799,13 @@ export function PrescriptionScannerPage() {
                     })}
                   </div>
 
-                  <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 space-y-3 dark:border-[#2B314D] dark:bg-[#101322]">
-                    <label className="flex items-start gap-2.5 text-xs cursor-pointer">
+                  <div className="rounded-xl border border-[#334155] bg-[#223451] p-4 space-y-3">
+                    <label className="flex items-start gap-2.5 text-xs text-[#F8FAFC] cursor-pointer">
                       <input
                         type="checkbox"
                         checked={confirmChecked}
                         onChange={(e) => setConfirmChecked(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 accent-[#7956C8]"
+                        className="mt-0.5 h-4 w-4 accent-[#8B5CF6]"
                       />
                       <span>
                         I have verified every medicine name, dosage, frequency, duration, and instruction against the original prescription for <strong>{activePatient.name}</strong>.
@@ -838,10 +838,10 @@ export function PrescriptionScannerPage() {
       {step === 'confirmed' && (
         <Card>
           <CardContent className="py-10 text-center space-y-4">
-            <CheckCircle2 className="mx-auto h-11 w-11 text-[#24A99B] dark:text-[#2DD4BF]" />
+            <CheckCircle2 className="mx-auto h-11 w-11 text-[#34D399]" />
             <div>
-              <h3 className="font-display text-xl font-bold">Added to Medication Schedule</h3>
-              <p className="mt-1 text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+              <h3 className="font-display text-xl font-bold text-[#F8FAFC]">Added to Medication Schedule</h3>
+              <p className="mt-1 text-sm text-[#A8B8CC]">
                 Activated {items.length} medicine(s) for {activePatient.name} and logged to Care History.
               </p>
             </div>
@@ -877,25 +877,25 @@ export function PrescriptionScannerPage() {
         </CardHeader>
         <CardContent>
           {patientPrescriptions.length === 0 ? (
-            <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="text-sm text-[#A8B8CC]">
               No prescriptions recorded yet.
             </p>
           ) : (
-            <div className="divide-y divide-[#E6E0D8] dark:divide-[#2B314D]">
+            <div className="divide-y divide-[#334155]">
               {patientPrescriptions.map((rx) => (
                 <div
                   key={rx.id}
                   className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
-                    <p className="text-sm font-semibold">
+                    <p className="text-sm font-semibold text-[#F8FAFC]">
                       {rx.fileName} · {rx.items.map((i) => `${i.medicineName} ${i.strength}`).join(', ')}
                     </p>
-                    <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+                    <p className="text-xs text-[#A8B8CC]">
                       Prescriber: {rx.prescriberName ?? 'Unspecified'} · Source: {rx.extractionSource}
                     </p>
                   </div>
-                  <span className="text-xs font-mono text-[#5C627D] dark:text-[#A3A9C2] tabular-nums">
+                  <span className="text-xs font-mono text-[#A8B8CC] tabular-nums">
                     {formatTimestamp(rx.confirmedAt ?? rx.createdAt)}
                   </span>
                 </div>
@@ -922,7 +922,7 @@ export function PrescriptionScannerPage() {
           </DialogHeader>
           {cameraError ? (
             <div className="space-y-3">
-              <p className="text-xs text-amber-700 dark:text-amber-300">{cameraError}</p>
+              <p className="text-xs text-[#FBBF24]">{cameraError}</p>
               <Button
                 type="button"
                 className="w-full"
@@ -941,7 +941,7 @@ export function PrescriptionScannerPage() {
                 autoPlay
                 playsInline
                 muted
-                className="w-full rounded-xl border border-[#E6E0D8] bg-black dark:border-[#2B314D]"
+                className="w-full rounded-xl border border-[#334155] bg-black"
               />
               <div className="flex justify-end gap-2">
                 <Button

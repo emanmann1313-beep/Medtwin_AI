@@ -23,7 +23,6 @@ import {
   YAxis,
 } from 'recharts';
 import { useMedTwin } from '@/src/context/MedTwinContext';
-import { useTheme } from '@/src/context/ThemeContext';
 import { runDigitalTwinSimulation } from '@/src/services/digitalTwinEngine';
 import { computeRefillForecasts } from '@/src/services/adherenceEngine';
 import { DigitalTwinScenario } from '@/src/types/medtwin';
@@ -53,8 +52,6 @@ export function DigitalTwinPage() {
     replenishMedicationStock,
     createSimulatedAlert,
   } = useMedTwin();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   const navigate = useNavigate();
 
   const [draftScenario, setDraftScenario] = useState<DigitalTwinScenario>(DEFAULT_SCENARIO);
@@ -114,12 +111,12 @@ export function DigitalTwinPage() {
       <Card>
         <CardContent className="pt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#7956C8] dark:text-[#A58AE8]">
-              <Activity className="h-4 w-4 text-[#24A99B] dark:text-[#2DD4BF]" />
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#8B5CF6]">
+              <Activity className="h-4 w-4 text-[#2DD4BF]" />
               <span>Medication Routine Simulation</span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="font-display text-2xl font-bold text-[#20243A] dark:text-[#F7F5F0]">
+              <h2 className="font-display text-2xl font-bold text-[#F8FAFC]">
                 Your Medication Digital Twin
               </h2>
               {state.patients.length > 0 && (
@@ -127,7 +124,7 @@ export function DigitalTwinPage() {
                   aria-label="Select patient for digital twin simulation"
                   value={activePatient.id}
                   onChange={(e) => setActivePatientId(e.target.value)}
-                  className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] px-3 py-1.5 text-xs font-medium text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                  className="rounded-xl border border-[#334155] bg-[#0B1220] px-3 py-1.5 text-xs font-medium text-[#F8FAFC]"
                 >
                   {state.patients.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -137,7 +134,7 @@ export function DigitalTwinPage() {
                 </select>
               )}
             </div>
-            <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">
+            <p className="text-sm text-[#A8B8CC]">
               Explore how changes in your medication routine could affect adherence and refill planning.
             </p>
           </div>
@@ -158,9 +155,9 @@ export function DigitalTwinPage() {
       {scheduledMeds.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center space-y-3">
-            <Activity className="mx-auto h-10 w-10 text-[#7956C8] dark:text-[#A58AE8]" />
-            <h3 className="font-display text-lg font-bold">No active scheduled medications to simulate</h3>
-            <p className="text-xs text-[#5C627D] dark:text-[#A3A9C2] max-w-md mx-auto">
+            <Activity className="mx-auto h-10 w-10 text-[#8B5CF6]" />
+            <h3 className="font-display text-lg font-bold text-[#F8FAFC]">No active scheduled medications to simulate</h3>
+            <p className="text-xs text-[#A8B8CC] max-w-md mx-auto">
               Add or scan a prescription first so your Digital Twin can model daily adherence and refill timing.
             </p>
             <Button type="button" onClick={() => navigate('/prescriptions')}>
@@ -182,7 +179,7 @@ export function DigitalTwinPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold">Simulation period</label>
+                  <label className="text-xs font-semibold text-[#F8FAFC]">Simulation period</label>
                   <div className="grid grid-cols-3 gap-2">
                     {([7, 14, 30] as const).map((days) => (
                       <button
@@ -192,8 +189,8 @@ export function DigitalTwinPage() {
                         className={cn(
                           'rounded-xl border px-3 py-2 text-xs font-semibold transition-colors cursor-pointer',
                           draftScenario.horizonDays === days
-                            ? 'border-[#7956C8] bg-[#D8C5E8]/40 text-[#7956C8] dark:border-[#A58AE8] dark:bg-[#7956C8]/20 dark:text-[#F7F5F0]'
-                            : 'border-[#E6E0D8] bg-[#FFFFFF] text-[#5C627D] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#A3A9C2]',
+                            ? 'border-[#8B5CF6] bg-[#8B5CF6]/20 text-[#F8FAFC]'
+                            : 'border-[#334155] bg-[#223451] text-[#A8B8CC] hover:text-[#F8FAFC]',
                         )}
                       >
                         {days} days
@@ -203,7 +200,7 @@ export function DigitalTwinPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="twin-med-select" className="text-xs font-semibold">
+                  <label htmlFor="twin-med-select" className="text-xs font-semibold text-[#F8FAFC]">
                     Select medication
                   </label>
                   <select
@@ -212,7 +209,7 @@ export function DigitalTwinPage() {
                     onChange={(e) =>
                       setDraftScenario((s) => ({ ...s, selectedMedicationId: e.target.value }))
                     }
-                    className="h-10 w-full rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 text-xs font-medium text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                    className="h-10 w-full rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs font-medium text-[#F8FAFC]"
                   >
                     <option value="all">All active scheduled medicines ({scheduledMeds.length})</option>
                     {scheduledMeds.map((m) => (
@@ -224,7 +221,7 @@ export function DigitalTwinPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="twin-mode-select" className="text-xs font-semibold">
+                  <label htmlFor="twin-mode-select" className="text-xs font-semibold text-[#F8FAFC]">
                     What-if scenario
                   </label>
                   <select
@@ -236,7 +233,7 @@ export function DigitalTwinPage() {
                         mode: e.target.value as DigitalTwinScenario['mode'],
                       }))
                     }
-                    className="h-10 w-full rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 text-xs font-medium text-[#20243A] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]"
+                    className="h-10 w-full rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs font-medium text-[#F8FAFC]"
                   >
                     <option value="refill-delay">Refill-delay scenario</option>
                     <option value="omitted-doses">Missed-dose scenario</option>
@@ -378,7 +375,7 @@ export function DigitalTwinPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 py-2">
-                    <div className="rounded-2xl border border-[#E6E0D8] bg-[#FAF8F5] p-6 flex justify-center dark:border-[#2B314D] dark:bg-[#101322]">
+                    <div className="rounded-2xl border border-[#2DD4BF]/30 bg-[#223451] p-6 flex justify-center shadow-[0_0_24px_rgba(45,212,191,0.12)]">
                       <ProgressRing
                         value={result.baselineAdherencePct}
                         size={154}
@@ -388,7 +385,7 @@ export function DigitalTwinPage() {
                         sublabel={`${result.baselineCoveredDoses} of ${result.projectedScheduledDoses} doses covered`}
                       />
                     </div>
-                    <div className="rounded-2xl border border-[#D8C5E8] bg-[#F5E5EC]/35 p-6 flex justify-center dark:border-[#2B314D] dark:bg-[#7956C8]/10">
+                    <div className="rounded-2xl border border-[#8B5CF6]/35 bg-[#223451] p-6 flex justify-center shadow-[0_0_24px_rgba(139,92,246,0.16)]">
                       <ProgressRing
                         value={result.scenarioAdherencePct}
                         size={154}
@@ -402,45 +399,45 @@ export function DigitalTwinPage() {
 
                   {/* 4 Required Metrics Below */}
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-3.5 dark:border-[#2B314D] dark:bg-[#101322]">
-                      <span className="text-[11px] text-[#5C627D] dark:text-[#A3A9C2] block">
+                    <div className="rounded-xl border border-[#334155] bg-[#223451] p-3.5">
+                      <span className="text-[11px] text-[#A8B8CC] block">
                         Estimated missed doses
                       </span>
-                      <span className="mt-1 font-display text-xl font-bold text-[#20243A] dark:text-[#F7F5F0] tabular-nums block">
+                      <span className="mt-1 font-display text-xl font-bold text-[#F8FAFC] tabular-nums block">
                         {estimatedMissedDoses}
                       </span>
                     </div>
 
-                    <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-3.5 dark:border-[#2B314D] dark:bg-[#101322]">
-                      <span className="text-[11px] text-[#5C627D] dark:text-[#A3A9C2] block">
+                    <div className="rounded-xl border border-[#334155] bg-[#223451] p-3.5">
+                      <span className="text-[11px] text-[#A8B8CC] block">
                         Refill shortage estimate
                       </span>
-                      <span className="mt-1 font-display text-xl font-bold text-amber-700 dark:text-amber-400 tabular-nums block">
+                      <span className="mt-1 font-display text-xl font-bold text-[#FBBF24] tabular-nums block">
                         {refillShortageEstimate} day(s)
                       </span>
                     </div>
 
-                    <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-3.5 dark:border-[#2B314D] dark:bg-[#101322]">
-                      <span className="text-[11px] text-[#5C627D] dark:text-[#A3A9C2] block">
+                    <div className="rounded-xl border border-[#334155] bg-[#223451] p-3.5">
+                      <span className="text-[11px] text-[#A8B8CC] block">
                         Adherence difference
                       </span>
                       <span
                         className={cn(
                           'mt-1 font-display text-xl font-bold tabular-nums block',
                           adherenceDelta < 0
-                            ? 'text-amber-700 dark:text-amber-400'
-                            : 'text-[#24A99B] dark:text-[#2DD4BF]',
+                            ? 'text-[#FBBF24]'
+                            : 'text-[#34D399]',
                         )}
                       >
                         {adherenceDelta >= 0 ? `+${adherenceDelta}%` : `${adherenceDelta}%`}
                       </span>
                     </div>
 
-                    <div className="rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-3.5 dark:border-[#2B314D] dark:bg-[#101322]">
-                      <span className="text-[11px] text-[#5C627D] dark:text-[#A3A9C2] block">
+                    <div className="rounded-xl border border-[#334155] bg-[#223451] p-3.5">
+                      <span className="text-[11px] text-[#A8B8CC] block">
                         Caregiver alert conditions
                       </span>
-                      <span className="mt-1 font-display text-xl font-bold text-[#7956C8] dark:text-[#A58AE8] tabular-nums block">
+                      <span className="mt-1 font-display text-xl font-bold text-[#8B5CF6] tabular-nums block">
                         {result.triggeredAlertEvents.length} trigger(s)
                       </span>
                     </div>
@@ -459,23 +456,23 @@ export function DigitalTwinPage() {
                       <LineChart data={result.timeline}>
                         <CartesianGrid
                           strokeDasharray="3 3"
-                          stroke={isDark ? '#2B314D' : '#E6E0D8'}
+                          stroke="#334155"
                           vertical={false}
                         />
                         <XAxis
                           dataKey="dayLabel"
-                          tick={{ fontSize: 11, fill: isDark ? '#A3A9C2' : '#5C627D' }}
+                          tick={{ fontSize: 11, fill: '#A8B8CC' }}
                         />
                         <YAxis
                           domain={[0, 100]}
-                          tick={{ fontSize: 11, fill: isDark ? '#A3A9C2' : '#5C627D' }}
+                          tick={{ fontSize: 11, fill: '#A8B8CC' }}
                           unit="%"
                         />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: isDark ? '#171B2E' : '#FFFFFF',
-                            borderColor: isDark ? '#2B314D' : '#E6E0D8',
-                            color: isDark ? '#F7F5F0' : '#20243A',
+                            backgroundColor: '#223451',
+                            borderColor: '#334155',
+                            color: '#F8FAFC',
                             borderRadius: '12px',
                             fontSize: '12px',
                           }}
@@ -484,7 +481,7 @@ export function DigitalTwinPage() {
                           type="monotone"
                           dataKey="baselineAdherencePct"
                           name="Current Routine %"
-                          stroke={isDark ? '#2DD4BF' : '#24A99B'}
+                          stroke="#2DD4BF"
                           strokeWidth={2}
                           dot={false}
                         />
@@ -492,7 +489,7 @@ export function DigitalTwinPage() {
                           type="monotone"
                           dataKey="scenarioAdherencePct"
                           name="What-If Scenario %"
-                          stroke={isDark ? '#A58AE8' : '#7956C8'}
+                          stroke="#8B5CF6"
                           strokeWidth={2.5}
                           dot={{ r: 2.5 }}
                         />
@@ -516,22 +513,22 @@ export function DigitalTwinPage() {
                     <AreaChart data={result.timeline}>
                       <CartesianGrid
                         strokeDasharray="3 3"
-                        stroke={isDark ? '#2B314D' : '#E6E0D8'}
+                        stroke="#334155"
                         vertical={false}
                       />
                       <XAxis
                         dataKey="dayLabel"
-                        tick={{ fontSize: 11, fill: isDark ? '#A3A9C2' : '#5C627D' }}
+                        tick={{ fontSize: 11, fill: '#A8B8CC' }}
                       />
                       <YAxis
                         allowDecimals={false}
-                        tick={{ fontSize: 11, fill: isDark ? '#A3A9C2' : '#5C627D' }}
+                        tick={{ fontSize: 11, fill: '#A8B8CC' }}
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: isDark ? '#171B2E' : '#FFFFFF',
-                          borderColor: isDark ? '#2B314D' : '#E6E0D8',
-                          color: isDark ? '#F7F5F0' : '#20243A',
+                          backgroundColor: '#223451',
+                          borderColor: '#334155',
+                          color: '#F8FAFC',
                           borderRadius: '12px',
                           fontSize: '12px',
                         }}
@@ -540,16 +537,16 @@ export function DigitalTwinPage() {
                         type="monotone"
                         dataKey="baselineStock"
                         name="Current routine supply"
-                        stroke={isDark ? '#2DD4BF' : '#24A99B'}
-                        fill={isDark ? 'rgba(45, 212, 191, 0.14)' : 'rgba(36, 169, 155, 0.14)'}
+                        stroke="#2DD4BF"
+                        fill="rgba(45, 212, 191, 0.16)"
                         strokeWidth={2}
                       />
                       <Area
                         type="monotone"
                         dataKey="scenarioStock"
                         name="What-if supply"
-                        stroke={isDark ? '#A58AE8' : '#7956C8'}
-                        fill={isDark ? 'rgba(165, 138, 232, 0.2)' : 'rgba(121, 86, 200, 0.16)'}
+                        stroke="#8B5CF6"
+                        fill="rgba(139, 92, 246, 0.22)"
                         strokeWidth={2}
                       />
                     </AreaChart>
@@ -587,8 +584,8 @@ export function DigitalTwinPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {result.triggeredAlertEvents.length === 0 ? (
-                  <div className="flex items-center gap-2.5 rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] p-4 text-xs dark:border-[#2B314D] dark:bg-[#101322]">
-                    <CheckCircle2 className="h-4 w-4 text-[#24A99B] dark:text-[#2DD4BF] shrink-0" />
+                  <div className="flex items-center gap-2.5 rounded-xl border border-[#334155] bg-[#223451] p-4 text-xs text-[#F8FAFC]">
+                    <CheckCircle2 className="h-4 w-4 text-[#34D399] shrink-0" />
                     <span>
                       No caregiver alert conditions would be triggered over this {effectiveScenario.horizonDays}-day simulation.
                     </span>
@@ -598,14 +595,14 @@ export function DigitalTwinPage() {
                     {result.triggeredAlertEvents.map((ev, idx) => (
                       <div
                         key={`${ev.date}-${ev.medicationName}-${idx}`}
-                        className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-xs dark:border-amber-700/50 dark:bg-amber-950/25"
+                        className="flex items-start gap-2.5 rounded-xl border border-[#FBBF24]/35 bg-[#FBBF24]/10 p-3 text-xs"
                       >
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#FBBF24]" />
                         <div>
-                          <p className="font-semibold">
+                          <p className="font-semibold text-[#F8FAFC]">
                             {ev.medicationName} · {formatShortDate(ev.date)}
                           </p>
-                          <p className="text-[#5C627D] dark:text-[#A3A9C2]">{ev.reason}</p>
+                          <p className="text-[#A8B8CC]">{ev.reason}</p>
                         </div>
                       </div>
                     ))}
@@ -613,17 +610,17 @@ export function DigitalTwinPage() {
                 )}
 
                 {refillForecasts.some((r) => r.needsRefill) && (
-                  <div className="space-y-2 border-t border-[#E6E0D8] pt-3 dark:border-[#2B314D]">
-                    <p className="text-xs font-semibold flex items-center gap-1.5">
-                      <Package className="h-3.5 w-3.5 text-[#24A99B] dark:text-[#2DD4BF]" />
+                  <div className="space-y-2 border-t border-[#334155] pt-3">
+                    <p className="text-xs font-semibold flex items-center gap-1.5 text-[#F8FAFC]">
+                      <Package className="h-3.5 w-3.5 text-[#2DD4BF]" />
                       <span>Medicines needing refill soon</span>
                     </p>
                     {refillForecasts
                       .filter((r) => r.needsRefill)
                       .map((r) => (
                         <div key={r.medicationId} className="flex items-center justify-between gap-3 text-xs">
-                          <span className="text-[#5C627D] dark:text-[#A3A9C2]">
-                            <strong className="text-[#20243A] dark:text-[#F7F5F0]">
+                          <span className="text-[#A8B8CC]">
+                            <strong className="text-[#F8FAFC]">
                               {r.medicationName} {r.strength}
                             </strong>{' '}
                             ({r.daysRemaining ?? 0}d left)
@@ -647,11 +644,11 @@ export function DigitalTwinPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Info className="h-4 w-4 text-[#24A99B] dark:text-[#2DD4BF]" />
+                <Info className="h-4 w-4 text-[#2DD4BF]" />
                 <span>Plain-Language Assumptions (Non-Diagnostic)</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-xs text-[#5C627D] dark:text-[#A3A9C2]">
+            <CardContent className="space-y-2 text-xs text-[#A8B8CC]">
               <ul className="list-disc pl-5 space-y-1">
                 {result.assumptions.map((a, i) => (
                   <li key={i}>{a}</li>

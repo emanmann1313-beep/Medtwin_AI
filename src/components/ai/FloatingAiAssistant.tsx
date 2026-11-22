@@ -263,10 +263,10 @@ export function FloatingAiAssistant() {
             setMinimized(false);
           }}
           aria-label="Ask MedTwin AI"
-          className="group inline-flex h-13 items-center gap-2.5 rounded-full bg-linear-to-r from-[#7956C8] to-[#24A99B] px-4 text-sm font-semibold text-white shadow-lg transition-transform duration-150 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7956C8] cursor-pointer"
+          className="group inline-flex h-13 items-center gap-2.5 rounded-full bg-linear-to-r from-[#8B5CF6] to-[#2DD4BF] px-4 text-sm font-semibold text-[#F8FAFC] shadow-[0_0_28px_rgba(139,92,246,0.4)] transition-transform duration-150 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] cursor-pointer"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15">
-            <Sparkles className="h-4 w-4" />
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0B1220]/25">
+            <Sparkles className="h-4 w-4 text-[#F8FAFC]" />
           </span>
           <span className="hidden sm:inline whitespace-nowrap pr-1">Ask MedTwin AI</span>
         </button>
@@ -278,17 +278,17 @@ export function FloatingAiAssistant() {
     <div
       role="dialog"
       aria-label="MedTwin AI Care Assistant"
-      className="fixed bottom-4 right-4 z-40 flex h-[540px] max-h-[82vh] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden rounded-2xl border border-[#D8C5E8] bg-[#FFFFFF] shadow-2xl dark:border-[#2B314D] dark:bg-[#171B2E]"
+      className="fixed bottom-4 right-4 z-40 flex h-[540px] max-h-[82vh] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden rounded-2xl border border-[#334155] bg-[#1A2740] text-[#F8FAFC] shadow-[0_24px_64px_rgba(2,6,23,0.75)]"
     >
       {/* Drawer Header */}
-      <div className="flex items-center justify-between gap-2 bg-linear-to-r from-[#20243A] via-[#7956C8] to-[#24A99B] px-4 py-3 text-white">
+      <div className="flex items-center justify-between gap-2 border-b border-[#334155] bg-linear-to-r from-[#101B30] via-[#8B5CF6]/70 to-[#2DD4BF]/50 px-4 py-3 text-[#F8FAFC]">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/15">
-            <MessageCircle className="h-4 w-4" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0B1220]/35 border border-[#F8FAFC]/15">
+            <MessageCircle className="h-4 w-4 text-[#2DD4BF]" />
           </div>
           <div className="min-w-0">
             <p className="font-display text-sm font-bold leading-tight truncate">MedTwin AI Assistant</p>
-            <p className="text-[11px] text-white/80 truncate">
+            <p className="text-[11px] text-[#F8FAFC]/80 truncate">
               {hasPatients ? `Context: ${activePatient.name}` : 'Medication & schedule guide'}
             </p>
           </div>
@@ -344,18 +344,18 @@ export function FloatingAiAssistant() {
       </div>
 
       {/* Messages Area */}
-      <div ref={listRef} className="flex-1 overflow-y-auto bg-[#FAF8F5] p-4 space-y-3 dark:bg-[#101322]">
+      <div ref={listRef} className="flex-1 overflow-y-auto bg-[#0B1220] p-4 space-y-3">
         {messages.length === 0 ? (
           <div className="space-y-4">
-            <div className="rounded-2xl border border-[#E6E0D8] bg-[#FFFFFF] p-4 text-xs leading-relaxed text-[#20243A] dark:border-[#2B314D] dark:bg-[#171B2E] dark:text-[#F7F5F0]">
+            <div className="rounded-2xl border border-[#334155] bg-[#1A2740] p-4 text-xs leading-relaxed text-[#F8FAFC]">
               <p className="font-semibold">Hello! How can I help with your medication plan?</p>
-              <p className="mt-1 text-[#5C627D] dark:text-[#A3A9C2]">
+              <p className="mt-1 text-[#A8B8CC]">
                 Ask about today’s doses, refill timing, Digital Twin scenarios, or scanning prescriptions. Answers are non-diagnostic and based on your saved workspace records.
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[11px] font-semibold text-[#5C627D] dark:text-[#A3A9C2]">
+              <p className="text-[11px] font-semibold text-[#A8B8CC]">
                 Suggested questions
               </p>
               <div className="grid grid-cols-1 gap-1.5">
@@ -364,7 +364,7 @@ export function FloatingAiAssistant() {
                     key={q}
                     type="button"
                     onClick={() => handleSend(q)}
-                    className="rounded-xl border border-[#E6E0D8] bg-[#FFFFFF] px-3 py-2 text-left text-xs font-medium text-[#20243A] hover:border-[#7956C8] hover:text-[#7956C8] transition-colors cursor-pointer dark:border-[#2B314D] dark:bg-[#171B2E] dark:text-[#F7F5F0] dark:hover:border-[#A58AE8] dark:hover:text-[#A58AE8]"
+                    className="rounded-xl border border-[#334155] bg-[#223451] px-3 py-2 text-left text-xs font-medium text-[#F8FAFC] hover:border-[#8B5CF6] hover:text-[#2DD4BF] transition-colors cursor-pointer"
                   >
                     {q}
                   </button>
@@ -385,19 +385,19 @@ export function FloatingAiAssistant() {
                 className={cn(
                   'max-w-[88%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap',
                   msg.role === 'user'
-                    ? 'bg-[#7956C8] text-white'
-                    : 'border border-[#E6E0D8] bg-[#FFFFFF] text-[#20243A] dark:border-[#2B314D] dark:bg-[#171B2E] dark:text-[#F7F5F0]',
+                    ? 'bg-[#8B5CF6] text-[#F8FAFC] shadow-[0_4px_16px_rgba(139,92,246,0.28)]'
+                    : 'border border-[#334155] bg-[#223451] text-[#F8FAFC]',
                 )}
               >
                 {msg.text}
               </div>
-              <div className="flex items-center gap-2 text-[10px] text-[#5C627D] dark:text-[#A3A9C2]">
+              <div className="flex items-center gap-2 text-[10px] text-[#A8B8CC]">
                 <span>{msg.timestamp}</span>
                 {msg.role === 'assistant' && (
                   <button
                     type="button"
                     onClick={() => speakText(msg.text)}
-                    className="inline-flex items-center gap-1 font-semibold text-[#24A99B] hover:underline cursor-pointer dark:text-[#2DD4BF]"
+                    className="inline-flex items-center gap-1 font-semibold text-[#2DD4BF] hover:underline cursor-pointer"
                   >
                     <Volume2 className="h-3 w-3" />
                     <span>Read aloud</span>
@@ -409,14 +409,14 @@ export function FloatingAiAssistant() {
         )}
 
         {sending && (
-          <div className="inline-flex items-center gap-2 rounded-2xl border border-[#E6E0D8] bg-[#FFFFFF] px-3.5 py-2 text-xs text-[#5C627D] dark:border-[#2B314D] dark:bg-[#171B2E] dark:text-[#A3A9C2]">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#7956C8]" />
+          <div className="inline-flex items-center gap-2 rounded-2xl border border-[#334155] bg-[#223451] px-3.5 py-2 text-xs text-[#A8B8CC]">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#8B5CF6]" />
             <span>Thinking...</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-300">
+          <div className="flex items-start gap-2 rounded-xl border border-[#FB7185]/45 bg-[#FB7185]/12 p-2.5 text-xs text-[#FB7185]">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -429,7 +429,7 @@ export function FloatingAiAssistant() {
           e.preventDefault();
           handleSend();
         }}
-        className="flex items-center gap-2 border-t border-[#E6E0D8] bg-[#FFFFFF] p-3 dark:border-[#2B314D] dark:bg-[#171B2E]"
+        className="flex items-center gap-2 border-t border-[#334155] bg-[#101B30] p-3"
       >
         <button
           type="button"
@@ -438,8 +438,8 @@ export function FloatingAiAssistant() {
           className={cn(
             'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors cursor-pointer',
             listening
-              ? 'border-red-400 bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
-              : 'border-[#E6E0D8] bg-[#FAF8F5] text-[#20243A] hover:border-[#7956C8] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0]',
+              ? 'border-[#FB7185] bg-[#FB7185]/15 text-[#FB7185]'
+              : 'border-[#334155] bg-[#223451] text-[#F8FAFC] hover:border-[#8B5CF6]',
           )}
         >
           {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
@@ -450,7 +450,7 @@ export function FloatingAiAssistant() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about doses, refills, or Digital Twin..."
-          className="h-9 flex-1 rounded-xl border border-[#E6E0D8] bg-[#FAF8F5] px-3 text-xs text-[#20243A] placeholder:text-[#5C627D]/70 focus:outline-none focus:ring-2 focus:ring-[#7956C8] dark:border-[#2B314D] dark:bg-[#101322] dark:text-[#F7F5F0] dark:placeholder:text-[#A3A9C2]/60"
+          className="h-9 flex-1 rounded-xl border border-[#334155] bg-[#0B1220] px-3 text-xs text-[#F8FAFC] placeholder:text-[#A8B8CC]/65 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
         />
 
         <Button

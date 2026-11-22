@@ -1,7 +1,7 @@
-import React from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import React, { useLayoutEffect } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastProvider } from '@/src/components/ui/toast';
-import { ThemeProvider } from '@/src/context/ThemeContext';
+import { ThemeProvider, useTheme } from '@/src/context/ThemeContext';
 import { AuthProvider, DEFAULT_ROUTE_FOR_ROLE, useAuth } from '@/src/context/AuthContext';
 import { MedTwinProvider, useMedTwin } from '@/src/context/MedTwinContext';
 import { WorkspaceRole } from '@/src/types/medtwin';
@@ -28,6 +28,46 @@ import { HospitalTeamsPage } from '@/src/modules/hospital/HospitalTeamsPage';
 import { SettingsPage } from '@/src/modules/settings/SettingsPage';
 import { MedTwinLogo } from '@/src/components/shared/MedTwinLogo';
 
+function isPublicMarketingOrAuthPath(pathname: string): boolean {
+  if (
+    pathname === '/' ||
+    pathname === '/get-started' ||
+    pathname === '/register' ||
+    pathname === '/login' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password'
+  ) {
+    return true;
+  }
+  return pathname.startsWith('/register/');
+}
+
+function DashboardRouteThemeSync() {
+  const { pathname } = useLocation();
+  const { theme } = useTheme();
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const isDashboard = !isPublicMarketingOrAuthPath(pathname);
+
+    if (isDashboard) {
+      root.classList.add('dark', 'dashboard-dark');
+      root.style.colorScheme = 'dark';
+    } else {
+      root.classList.remove('dashboard-dark');
+      if (theme === 'dark') {
+        root.classList.add('dark');
+        root.style.colorScheme = 'dark';
+      } else {
+        root.classList.remove('dark');
+        root.style.colorScheme = 'light';
+      }
+    }
+  }, [pathname, theme]);
+
+  return null;
+}
+
 function ProtectedRoute({
   allowedRoles,
   children,
@@ -40,9 +80,9 @@ function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#FAF8F5] text-[#20243A] dark:bg-[#101322] dark:text-[#F7F5F0]">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#0B1220] text-[#F8FAFC]">
         <MedTwinLogo />
-        <p className="text-sm text-[#5C627D] dark:text-[#A3A9C2]">Loading your workspace...</p>
+        <p className="text-sm text-[#A8B8CC]">Loading your workspace...</p>
       </div>
     );
   }
@@ -225,6 +265,7 @@ export default function App() {
         <AuthProvider>
           <MedTwinProvider>
             <BrowserRouter>
+              <DashboardRouteThemeSync />
               <AppRoutes />
             </BrowserRouter>
           </MedTwinProvider>
